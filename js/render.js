@@ -470,7 +470,7 @@ const R = {
       case 'gen': return this.drawGen(ctx, e, px, py, s, t, working);
     }
     // generic machine
-    const accent = { smelter: '#ff7b2e', constructor: '#ff9a3c', assembler: '#ffc23c', foundry: '#ff5a3c', refinery: '#b07cff', manufacturer: '#4fb3ff' }[e.type] || '#ff9a3c';
+    const accent = { smelter: '#ff7b2e', constructor: '#ff9a3c', assembler: '#ffc23c', foundry: '#ff5a3c', refinery: '#b07cff', manufacturer: '#4fb3ff', electronics_factory: '#2fd4b4' }[e.type] || '#ff9a3c';
     ctx.fillStyle = '#3a414c'; Icons.rr(ctx, px + 2, py + 2, s - 4, s - 4, 6); ctx.fill();
     ctx.fillStyle = '#4b5462'; Icons.rr(ctx, px + 5, py + 5, s - 10, s - 10, 5); ctx.fill();
     ctx.fillStyle = accent; ctx.fillRect(px + 5, py + 5, s - 10, 4);
@@ -493,7 +493,7 @@ const R = {
       ctx.fillStyle = '#6a4a9a';
       ctx.beginPath(); ctx.arc(px + s * 0.25, py + s * 0.3, s * 0.13, 0, 7); ctx.arc(px + s * 0.75, py + s * 0.3, s * 0.13, 0, 7); ctx.fill();
       if (working && Math.random() < 0.05) this.spawn('steam', px + s * 0.75, py + 8);
-    } else if (e.type === 'manufacturer' || e.type === 'assembler') {
+    } else if (e.type === 'manufacturer' || e.type === 'assembler' || e.type === 'electronics_factory') {
       // robotic arms
       ctx.strokeStyle = '#8a94a3'; ctx.lineWidth = 3;
       const a = working ? Math.sin(anim * 4) * 0.6 : 0;
@@ -533,7 +533,7 @@ const R = {
 
   // Symbol that identifies a production machine: flame, hammer, gears, crucible, flask, factory
   drawEmblem(ctx, type, cx, cy, r) {
-    const accent = { smelter: '#ff7b2e', constructor: '#ff9a3c', assembler: '#ffc23c', foundry: '#ff5a3c', refinery: '#b07cff', manufacturer: '#4fb3ff' }[type] || '#ff9a3c';
+    const accent = { smelter: '#ff7b2e', constructor: '#ff9a3c', assembler: '#ffc23c', foundry: '#ff5a3c', refinery: '#b07cff', manufacturer: '#4fb3ff', electronics_factory: '#2fd4b4' }[type] || '#ff9a3c';
     ctx.save();
     ctx.translate(cx, cy);
     ctx.fillStyle = '#1b1f25';
@@ -585,6 +585,13 @@ const R = {
         ctx.beginPath(); ctx.moveTo(-1.8, -7); ctx.lineTo(1.8, -7); ctx.lineTo(1.8, -2); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.lineTo(-1.8, -2); ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#b07cff';
         ctx.beginPath(); ctx.moveTo(-3.8, 1.5); ctx.lineTo(3.8, 1.5); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill();
+        break;
+      }
+      case 'electronics_factory': {
+        // smartphone
+        ctx.fillStyle = '#d9dde2'; Icons.rr(ctx, -4.5, -8, 9, 16, 2); ctx.fill();
+        ctx.fillStyle = '#2fd4b4'; ctx.fillRect(-3.3, -6, 6.6, 10.5);
+        ctx.fillStyle = '#1b1f25'; ctx.beginPath(); ctx.arc(0, 6.3, 0.9, 0, 7); ctx.fill();
         break;
       }
       case 'manufacturer': {

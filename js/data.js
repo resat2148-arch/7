@@ -49,6 +49,20 @@ const ITEMS = {
   ai_limiter:     { name: n('AI Limiter', 'YZ Sınırlayıcı'), shape: 'chip', color: '#e58b52', c2: '#f3d25a', value: 920 },
   hsc:            { name: n('High-Speed Connector', 'Yüksek Hızlı Konektör'), shape: 'hsc', color: '#f3d25a', c2: '#5d6b78', value: 3776 },
   supercomputer:  { name: n('Supercomputer', 'Süper Bilgisayar'), shape: 'super', color: '#2e333b', c2: '#ff5ad1', value: 97352 },
+  // Consumer electronics branch
+  raw_quartz:     { name: n('Raw Quartz', 'Ham Kuvars'), shape: 'ore', color: '#e89bd0', c2: '#fff0fa', value: 15 },
+  quartz_crystal: { name: n('Quartz Crystal', 'Kuvars Kristali'), shape: 'crystal', color: '#f2b8e0', value: 50 },
+  silica:         { name: n('Silica', 'Silika'), shape: 'powder', color: '#e6e3f0', value: 20 },
+  glass:          { name: n('Glass', 'Cam'), shape: 'glass', color: '#9fe3ff', value: 30 },
+  battery:        { name: n('Battery', 'Pil'), shape: 'battery', color: '#5ad17a', c2: '#2e333b', value: 400 },
+  speaker:        { name: n('Speaker', 'Hoparlör'), shape: 'speaker', color: '#2e333b', c2: '#9aa3ad', value: 350 },
+  display:        { name: n('Display Panel', 'Ekran Paneli'), shape: 'display', color: '#2e333b', c2: '#4fb3ff', value: 1500 },
+  microchip:      { name: n('Microchip', 'Mikroçip'), shape: 'chip', color: '#4fb3ff', c2: '#d9dde2', value: 700 },
+  camera_module:  { name: n('Camera Module', 'Kamera Modülü'), shape: 'camera', color: '#2e333b', c2: '#9fe3ff', value: 2200 },
+  television:     { name: n('Television', 'Televizyon'), shape: 'tv', color: '#2e333b', c2: '#4fb3ff', value: 12000 },
+  smartphone:     { name: n('Smartphone', 'Akıllı Telefon'), shape: 'phone', color: '#1b1f25', c2: '#7fd4ff', value: 25000 },
+  laptop:         { name: n('Laptop', 'Dizüstü Bilgisayar'), shape: 'laptop', color: '#9aa3ad', c2: '#4fb3ff', value: 40000 },
+  game_console:   { name: n('Game Console', 'Oyun Konsolu'), shape: 'console', color: '#e8ecf1', c2: '#ff5ad1', value: 22000 },
 };
 
 // machine: which building crafts it. hand: can be hand-crafted. alt: alternate recipe (hard drive)
@@ -95,6 +109,19 @@ const RECIPES = {
   acu:            { m: 'manufacturer', in: { aw: 5, circuit_board: 5, hmf: 1, computer: 2 }, out: { acu: 2 }, t: 60 },
   hsc:            { m: 'manufacturer', in: { quickwire: 56, cable: 10, circuit_board: 1 }, out: { hsc: 1 }, t: 16 },
   supercomputer:  { m: 'manufacturer', in: { computer: 4, ai_limiter: 2, hsc: 3, plastic: 28 }, out: { supercomputer: 1 }, t: 32 },
+  // Consumer electronics
+  quartz_crystal: { m: 'constructor', in: { raw_quartz: 5 }, out: { quartz_crystal: 3 }, t: 8, hand: true },
+  silica:         { m: 'constructor', in: { raw_quartz: 3 }, out: { silica: 5 }, t: 8, hand: true },
+  glass:          { m: 'smelter', in: { silica: 2 }, out: { glass: 1 }, t: 4 },
+  battery:        { m: 'assembler', in: { plastic: 2, copper_sheet: 2 }, out: { battery: 1 }, t: 8, hand: true },
+  speaker:        { m: 'assembler', in: { wire: 8, plastic: 2 }, out: { speaker: 1 }, t: 8, hand: true },
+  display:        { m: 'assembler', in: { glass: 3, circuit_board: 1 }, out: { display: 1 }, t: 12, hand: true },
+  microchip:      { m: 'assembler', in: { silica: 4, quickwire: 8 }, out: { microchip: 2 }, t: 10, hand: true },
+  camera_module:  { m: 'assembler', in: { quartz_crystal: 2, microchip: 1 }, out: { camera_module: 1 }, t: 12, hand: true },
+  television:     { m: 'electronics_factory', in: { display: 2, circuit_board: 2, speaker: 2, plastic: 6 }, out: { television: 1 }, t: 30 },
+  smartphone:     { m: 'electronics_factory', in: { display: 1, microchip: 2, battery: 1, camera_module: 1 }, out: { smartphone: 1 }, t: 20 },
+  laptop:         { m: 'electronics_factory', in: { display: 2, computer: 1, battery: 2, plastic: 4 }, out: { laptop: 1 }, t: 40 },
+  game_console:   { m: 'electronics_factory', in: { microchip: 4, circuit_board: 2, plastic: 8, speaker: 1 }, out: { game_console: 1 }, t: 30 },
 
   // Alternate recipes (found on Hard Drives)
   alt_cast_screw:     { alt: true, name: n('Cast Screw', 'Dökme Vida'), m: 'constructor', in: { iron_ingot: 5 }, out: { screw: 20 }, t: 24 },
@@ -160,6 +187,8 @@ const BUILDINGS = {
     desc: n('Refines Crude Oil into Plastic, Rubber and Fuel.', 'Ham Petrolü Plastik, Kauçuk ve Yakıta dönüştürür.') },
   manufacturer: { kind: 'machine', size: 4, power: 55, name: n('Manufacturer', 'İmalatçı'), cat: 'production', cost: { motor: 10, plastic: 40, modular_frame: 20 }, reveal: 7,
     desc: n('Combines up to four inputs into complex parts.', 'Dört girdiye kadar birleştirip karmaşık parçalar üretir.') },
+  electronics_factory: { kind: 'machine', size: 4, power: 75, name: n('Electronics Factory', 'Elektronik Fabrikası'), cat: 'production', cost: { motor: 10, circuit_board: 20, glass: 50, plastic: 50 }, reveal: 7,
+    desc: n('Assembles consumer tech: TVs, smartphones, laptops and game consoles.', 'Tüketici teknolojisi üretir: televizyon, akıllı telefon, dizüstü bilgisayar ve oyun konsolu.') },
   biomass_burner: { kind: 'gen', size: 2, gen: 30, fuels: { leaves: 3, wood: 15, biomass: 20 }, fuelCap: 200, name: n('Biomass Burner', 'Biyokütle Yakıcı'), cat: 'power', cost: { iron_plate: 15, iron_rod: 15 }, reveal: 5,
     desc: n('30 MW. Burns Leaves, Wood or Biomass.', '30 MW. Yaprak, Odun veya Biyokütle yakar.') },
   coal_gen: { kind: 'gen', size: 3, gen: 75, fuels: { coal: 4 }, fuelCap: 100, name: n('Coal Generator', 'Kömür Jeneratörü'), cat: 'power', cost: { rip: 10, rotor: 5, cable: 20 }, reveal: 5,
@@ -206,6 +235,9 @@ const MILESTONES = [
   { id: 'm6_ind', tier: 6, name: n('Industrial Manufacturing', 'Endüstriyel İmalat'), cost: { circuit_board: 100, motor: 50, plastic: 200 }, b: ['manufacturer'], r: ['computer', 'hmf', 'modular_engine', 'acu'] },
   { id: 'm6_cat', tier: 6, name: n('Caterium Electronics', 'Katerium Elektroniği'), cost: { circuit_board: 50, vf: 50 }, b: ['geothermal'], r: ['caterium_ingot', 'quickwire', 'ai_limiter'] },
   { id: 'm7_super', tier: 7, name: n('Supercomputing', 'Süper Hesaplama'), cost: { computer: 50, circuit_board: 200, hmf: 20 }, b: [], r: ['hsc', 'supercomputer'] },
+  { id: 'm5_quartz', tier: 5, name: n('Quartz Processing', 'Kuvars İşleme'), cost: { circuit_board: 30, motor: 20, plastic: 100 }, b: [], r: ['quartz_crystal', 'silica', 'glass', 'battery', 'speaker'] },
+  { id: 'm6_consumer', tier: 6, name: n('Consumer Electronics', 'Tüketici Elektroniği'), cost: { glass: 100, battery: 50, speaker: 50 }, b: ['electronics_factory'], r: ['display', 'television'], shards: 2 },
+  { id: 'm7_mobile', tier: 7, name: n('Mobile Technology', 'Mobil Teknoloji'), cost: { television: 20, display: 50, ai_limiter: 50 }, b: [], r: ['microchip', 'camera_module', 'smartphone', 'laptop', 'game_console'], shards: 3 },
   { id: 'm7_miner', tier: 7, name: n('Miner Mk.3', 'Madenci Mk.3'), cost: { hmf: 10, computer: 20 }, b: ['miner3'], r: [], shards: 3 },
 ];
 
@@ -213,7 +245,7 @@ const PHASES = [
   { cost: { smart_plating: 25 }, tiers: [3, 4] },
   { cost: { smart_plating: 100, vf: 100, aw: 50 }, tiers: [5, 6] },
   { cost: { vf: 200, modular_engine: 40, acu: 20 }, tiers: [7] },
-  { cost: { supercomputer: 25, acu: 50, modular_engine: 100 }, tiers: [], final: true },
+  { cost: { supercomputer: 25, acu: 50, modular_engine: 100, smartphone: 50 }, tiers: [], final: true },
 ];
 
 const PURITY = {
@@ -230,6 +262,7 @@ const NODE_TYPES = {
   caterium_ore: { color: '#e8c040', glow: '#fff08a' },
   crude_oil: { color: '#1b1224', glow: '#b07cff' },
   geyser: { color: '#6a7a88', glow: '#d8f4ff' },
+  raw_quartz: { color: '#e89bd0', glow: '#ffd6f2' },
 };
 
 const ACHIEVEMENTS = [
@@ -246,6 +279,9 @@ const ACHIEVEMENTS = [
   { id: 'slugs_10', name: n('Slug Hunter', 'Salyangoz Avcısı'), desc: n('Collect 10 Power Slugs', '10 Güç Salyangozu topla') },
   { id: 'power_500', name: n('Power Plant', 'Enerji Santrali'), desc: n('Have 500 MW capacity', '500 MW kapasiten olsun') },
   { id: 'sink_100k', name: n('Consumerism', 'Tüketim Çılgınlığı'), desc: n('Earn 100,000 sink points', '100.000 havuz puanı kazan') },
+  { id: 'first_tv', name: n('Prime Time', 'Prime Time'), desc: n('Deliver a Television', 'Bir Televizyon teslim et') },
+  { id: 'first_phone', name: n('Hello, World!', 'Merhaba Dünya!'), desc: n('Deliver a Smartphone', 'Bir Akıllı Telefon teslim et') },
+  { id: 'gadgets_100', name: n('Tech Giant', 'Teknoloji Devi'), desc: n('Deliver 100 consumer devices', '100 elektronik cihaz teslim et') },
   { id: 'machines_50', name: n('Industrialist', 'Sanayici'), desc: n('Have 50 production buildings', '50 üretim binan olsun') },
 ];
 

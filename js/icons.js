@@ -265,6 +265,95 @@ const Icons = (() => {
         }
         break;
       }
+      case 'crystal': {
+        ctx.fillStyle = shade(c, -0.2);
+        ctx.beginPath(); ctx.moveTo(0.5, 0.1); ctx.lineTo(0.72, 0.3); ctx.lineTo(0.72, 0.72); ctx.lineTo(0.5, 0.9); ctx.lineTo(0.28, 0.72); ctx.lineTo(0.28, 0.3); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = shade(c, 0.35);
+        ctx.beginPath(); ctx.moveTo(0.5, 0.1); ctx.lineTo(0.5, 0.9); ctx.lineTo(0.28, 0.72); ctx.lineTo(0.28, 0.3); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(0.36, 0.3, 0.04, 0.3);
+        break;
+      }
+      case 'powder': {
+        ctx.fillStyle = shade(c, -0.15);
+        ctx.beginPath(); ctx.moveTo(0.12, 0.78); ctx.quadraticCurveTo(0.5, 0.12, 0.88, 0.78); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = shade(c, 0.3);
+        [[0.4, 0.5], [0.55, 0.62], [0.5, 0.4], [0.64, 0.7], [0.32, 0.68]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 0.035, 0, 7); ctx.fill(); });
+        break;
+      }
+      case 'glass': {
+        ctx.fillStyle = 'rgba(159,227,255,0.55)';
+        rr(ctx, 0.18, 0.14, 0.64, 0.72, 0.05); ctx.fill();
+        ctx.strokeStyle = shade(c, -0.3); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 0.05;
+        ctx.beginPath(); ctx.moveTo(0.3, 0.45); ctx.lineTo(0.5, 0.25); ctx.moveTo(0.38, 0.58); ctx.lineTo(0.66, 0.3); ctx.stroke();
+        break;
+      }
+      case 'battery': {
+        ctx.fillStyle = c2; rr(ctx, 0.26, 0.2, 0.48, 0.66, 0.06); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c2; ctx.fillRect(0.42, 0.12, 0.16, 0.08);
+        ctx.fillStyle = c; ctx.fillRect(0.31, 0.5, 0.38, 0.31);
+        ctx.fillStyle = '#fff'; ctx.fillRect(0.46, 0.3, 0.08, 0.14); ctx.fillRect(0.43, 0.33, 0.14, 0.08);
+        break;
+      }
+      case 'speaker': {
+        ctx.fillStyle = c; rr(ctx, 0.2, 0.12, 0.6, 0.76, 0.08); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(0.5, 0.6, 0.17, 0, 7); ctx.fill();
+        ctx.fillStyle = '#1b1f25'; ctx.beginPath(); ctx.arc(0.5, 0.6, 0.07, 0, 7); ctx.fill();
+        ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(0.5, 0.28, 0.07, 0, 7); ctx.fill();
+        break;
+      }
+      case 'display': {
+        ctx.fillStyle = c; rr(ctx, 0.1, 0.24, 0.8, 0.52, 0.04); ctx.fill(); ctx.stroke();
+        const g = ctx.createLinearGradient(0.14, 0.28, 0.86, 0.72);
+        g.addColorStop(0, c2); g.addColorStop(1, '#c77dff');
+        ctx.fillStyle = g; ctx.fillRect(0.15, 0.29, 0.7, 0.42);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.moveTo(0.15, 0.29); ctx.lineTo(0.4, 0.29); ctx.lineTo(0.15, 0.55); ctx.fill();
+        break;
+      }
+      case 'camera': {
+        ctx.fillStyle = c; rr(ctx, 0.14, 0.26, 0.72, 0.5, 0.08); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#9aa3ad'; ctx.beginPath(); ctx.arc(0.5, 0.51, 0.19, 0, 7); ctx.fill();
+        ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(0.5, 0.51, 0.12, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0.46, 0.47, 0.035, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ff5a5a'; ctx.beginPath(); ctx.arc(0.76, 0.34, 0.035, 0, 7); ctx.fill();
+        break;
+      }
+      case 'tv': {
+        ctx.fillStyle = '#6c7a88'; ctx.fillRect(0.44, 0.7, 0.12, 0.1); ctx.fillRect(0.3, 0.8, 0.4, 0.05);
+        ctx.fillStyle = c; rr(ctx, 0.06, 0.16, 0.88, 0.56, 0.05); ctx.fill(); ctx.stroke();
+        const g = ctx.createLinearGradient(0, 0.2, 0, 0.68);
+        g.addColorStop(0, c2); g.addColorStop(1, '#2fd4b4');
+        ctx.fillStyle = g; ctx.fillRect(0.11, 0.21, 0.78, 0.46);
+        ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.moveTo(0.44, 0.34); ctx.lineTo(0.6, 0.44); ctx.lineTo(0.44, 0.54); ctx.fill();
+        break;
+      }
+      case 'phone': {
+        ctx.fillStyle = c; rr(ctx, 0.28, 0.08, 0.44, 0.84, 0.08); ctx.fill(); ctx.stroke();
+        const g = ctx.createLinearGradient(0.3, 0.14, 0.7, 0.84);
+        g.addColorStop(0, c2); g.addColorStop(1, '#c77dff');
+        ctx.fillStyle = g; rr(ctx, 0.32, 0.14, 0.36, 0.7, 0.04); ctx.fill();
+        ctx.fillStyle = c; rr(ctx, 0.44, 0.15, 0.12, 0.04, 0.02); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.8)'; [[0.4, 0.3], [0.5, 0.3], [0.6, 0.3], [0.4, 0.42], [0.5, 0.42]].forEach(([x, y]) => ctx.fillRect(x - 0.03, y - 0.03, 0.06, 0.06));
+        break;
+      }
+      case 'laptop': {
+        ctx.fillStyle = shade(c, -0.3); rr(ctx, 0.18, 0.14, 0.64, 0.46, 0.04); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c2; ctx.fillRect(0.22, 0.18, 0.56, 0.38);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(0.26, 0.24, 0.3, 0.05); ctx.fillRect(0.26, 0.33, 0.4, 0.05);
+        ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(0.12, 0.62); ctx.lineTo(0.88, 0.62); ctx.lineTo(0.96, 0.78); ctx.lineTo(0.04, 0.78); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = shade(c, -0.25); ctx.fillRect(0.4, 0.66, 0.2, 0.04);
+        break;
+      }
+      case 'console': {
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.moveTo(0.2, 0.34); ctx.lineTo(0.8, 0.34); ctx.quadraticCurveTo(0.96, 0.36, 0.92, 0.66); ctx.quadraticCurveTo(0.88, 0.82, 0.74, 0.72);
+        ctx.lineTo(0.26, 0.72); ctx.quadraticCurveTo(0.12, 0.82, 0.08, 0.66); ctx.quadraticCurveTo(0.04, 0.36, 0.2, 0.34); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2e333b'; ctx.fillRect(0.2, 0.47, 0.14, 0.05); ctx.fillRect(0.245, 0.425, 0.05, 0.14);
+        ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(0.7, 0.45, 0.04, 0, 7); ctx.fill();
+        ctx.fillStyle = '#4fb3ff'; ctx.beginPath(); ctx.arc(0.78, 0.53, 0.04, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(0.62, 0.53, 0.04, 0, 7); ctx.fill();
+        break;
+      }
       default: {
         ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0.5, 0.5, 0.3, 0, 7); ctx.fill(); ctx.stroke();
       }

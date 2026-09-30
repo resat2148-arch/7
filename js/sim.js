@@ -850,6 +850,10 @@ function checkAchievements() {
   if ((G.stats.slugs || 0) >= 10) unlockAch('slugs_10');
   if (G.power.cap >= 500) unlockAch('power_500');
   if (G.pointsTotal >= 100000) unlockAch('sink_100k');
+  const dl = G.stats.delivered;
+  if ((dl.television || 0) >= 1) unlockAch('first_tv');
+  if ((dl.smartphone || 0) >= 1) unlockAch('first_phone');
+  if (['television', 'smartphone', 'laptop', 'game_console'].reduce((t, k) => t + (dl[k] || 0), 0) >= 100) unlockAch('gadgets_100');
 }
 
 // ---------- Tutorial ----------
