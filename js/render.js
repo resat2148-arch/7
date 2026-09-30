@@ -607,19 +607,123 @@ const R = {
     ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 4, y); ctx.fill();
   },
 
+  // The HUB grows a new module with each completed milestone (see HUB_MODULES)
   drawHub(ctx, px, py, s, t) {
+    const lv = hubLevel(), stage = hubStage();
+    const trim = HUB_STAGES[stage].trim;
+    const cx = px + s / 2, cy = py + s / 2;
+    // golden aura at the top level
+    if (lv >= 20) {
+      const g = ctx.createRadialGradient(cx, cy, s * 0.3, cx, cy, s * 0.85);
+      g.addColorStop(0, `rgba(255,210,63,${0.35 + Math.sin(t * 2) * 0.1})`); g.addColorStop(1, 'rgba(255,210,63,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, s * 0.85, 0, 7); ctx.fill();
+    }
     ctx.fillStyle = '#2f353f'; Icons.rr(ctx, px + 2, py + 2, s - 4, s - 4, 10); ctx.fill();
-    ctx.fillStyle = '#ff9a3c'; Icons.rr(ctx, px + 8, py + 8, s - 16, s - 16, 8); ctx.fill();
+    // landing pad markings from Base stage
+    if (stage >= 2) {
+      ctx.strokeStyle = trim; ctx.globalAlpha = 0.5; ctx.lineWidth = 2;
+      Icons.rr(ctx, px + 4, py + 4, s - 8, s - 8, 9); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = stage >= 3 ? '#4b5462' : '#ff9a3c'; Icons.rr(ctx, px + 8, py + 8, s - 16, s - 16, 8); ctx.fill();
+    ctx.strokeStyle = trim; ctx.lineWidth = stage >= 1 ? 3 : 0.01; Icons.rr(ctx, px + 8, py + 8, s - 16, s - 16, 8); ctx.stroke();
     ctx.fillStyle = '#3a414c'; Icons.rr(ctx, px + 14, py + 14, s - 28, s - 28, 6); ctx.fill();
-    // stripes
+    // energy core behind the title
+    if (lv >= 13) {
+      const g = ctx.createRadialGradient(cx, cy - 4, 2, cx, cy - 4, 30);
+      g.addColorStop(0, `rgba(160,230,255,${0.8 + Math.sin(t * 4) * 0.2})`); g.addColorStop(1, 'rgba(79,179,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy - 4, 30, 0, 7); ctx.fill();
+    }
+    // hazard stripes
     ctx.save(); ctx.beginPath(); ctx.rect(px + 2, py + s - 14, s - 4, 8); ctx.clip();
     for (let k = -2; k < s / 8; k++) { ctx.fillStyle = k % 2 ? '#1b1f25' : '#ffcf3c'; ctx.beginPath(); ctx.moveTo(px + k * 8, py + s - 6); ctx.lineTo(px + k * 8 + 8, py + s - 14); ctx.lineTo(px + k * 8 + 16, py + s - 14); ctx.lineTo(px + k * 8 + 8, py + s - 6); ctx.fill(); }
     ctx.restore();
+    // storage tanks (bottom-left)
+    if (lv >= 2) {
+      for (let k = 0; k < 2; k++) {
+        const tx = px + 24 + k * 14, ty = py + s - 30;
+        ctx.fillStyle = '#6c7a88'; ctx.beginPath(); ctx.arc(tx, ty, 6, 0, 7); ctx.fill();
+        ctx.fillStyle = '#9aa3ad'; ctx.beginPath(); ctx.arc(tx - 1.5, ty - 1.5, 2.5, 0, 7); ctx.fill();
+      }
+    }
+    // solar panels (left edge)
+    if (lv >= 3) {
+      for (let k = 0; k < 3; k++) {
+        const sx = px + 15, sy = py + 34 + k * 14;
+        ctx.fillStyle = '#1e4f8a'; ctx.fillRect(sx, sy, 10, 11);
+        ctx.strokeStyle = '#6fc3ff'; ctx.lineWidth = 0.8; ctx.strokeRect(sx, sy, 10, 11);
+        ctx.beginPath(); ctx.moveTo(sx + 5, sy); ctx.lineTo(sx + 5, sy + 11); ctx.moveTo(sx, sy + 5.5); ctx.lineTo(sx + 10, sy + 5.5); ctx.stroke();
+      }
+    }
+    // radar dish (top-left), rotating
+    if (lv >= 4) {
+      ctx.save(); ctx.translate(px + 26, py + 26); ctx.rotate(t * 1.2);
+      ctx.fillStyle = '#d9dde2'; ctx.beginPath(); ctx.ellipse(0, 0, 10, 4.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = trim; ctx.fillRect(-1.5, -1.5, 9, 3);
+      ctx.restore();
+    }
+    // title + control room windows
     ctx.fillStyle = '#fff'; ctx.font = 'bold 22px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('HUB', px + s / 2, py + s / 2 - 4);
-    // antenna light
+    ctx.fillText('HUB', cx, cy - 4);
+    if (lv >= 6) {
+      for (let k = 0; k < 5; k++) {
+        const on = Math.sin(t * 1.5 + k * 1.7) > -0.6;
+        ctx.fillStyle = on ? '#ffd23f' : '#5a616b';
+        ctx.fillRect(cx - 22 + k * 9, cy + 12, 6, 4);
+      }
+    }
+    // antenna (top-right)
+    if (lv >= 1) {
+      ctx.strokeStyle = '#9aa3ad'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(px + s - 18, py + 30); ctx.lineTo(px + s - 18, py + 12); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px + s - 23, py + 18); ctx.lineTo(px + s - 13, py + 18); ctx.stroke();
+    }
     ctx.fillStyle = `rgba(90,209,122,${0.5 + Math.sin(t * 3) * 0.5})`;
-    ctx.beginPath(); ctx.arc(px + s - 16, py + 16, 4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(px + s - 18, py + (lv >= 1 ? 11 : 16), 4, 0, 7); ctx.fill();
+    // second antenna + uplink beam
+    if (lv >= 16) {
+      ctx.strokeStyle = '#9aa3ad'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(px + s - 32, py + 30); ctx.lineTo(px + s - 32, py + 8); ctx.stroke();
+      const g = ctx.createLinearGradient(0, py + 8, 0, py - 160);
+      g.addColorStop(0, 'rgba(199,125,255,0.7)'); g.addColorStop(1, 'rgba(199,125,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(px + s - 34, py - 160, 4, 168);
+    }
+    // corner beacons
+    if (lv >= 8) {
+      const pts = [[px + 5, py + 5], [px + s - 5, py + 5], [px + 5, py + s - 5], [px + s - 5, py + s - 5]];
+      pts.forEach(([bx, by], i) => {
+        const a = Math.max(0, Math.sin(t * 4 - i * 1.57));
+        ctx.fillStyle = `rgba(255,90,90,${0.3 + a * 0.7})`;
+        ctx.beginPath(); ctx.arc(bx, by, 3 + a * 2, 0, 7); ctx.fill();
+      });
+    }
+    // hologram ring
+    if (lv >= 10) {
+      ctx.save(); ctx.translate(cx, cy - 4);
+      ctx.strokeStyle = `rgba(127,212,255,${0.55 + Math.sin(t * 3) * 0.2})`; ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]); ctx.lineDashOffset = -t * 30;
+      ctx.beginPath(); ctx.ellipse(0, 0, 48, 16, 0, 0, 7); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+    // level badge
+    ctx.fillStyle = '#1b1f25'; Icons.rr(ctx, px + s - 40, py + s - 34, 30, 16, 5); ctx.fill();
+    ctx.strokeStyle = trim; ctx.lineWidth = 1.5; Icons.rr(ctx, px + s - 40, py + s - 34, 30, 16, 5); ctx.stroke();
+    ctx.fillStyle = trim; ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.fillText('Lv ' + lv, px + s - 25, py + s - 26);
+    // upgrade effect: scan line sweeping down + expanding ring
+    const fx = this.hubFx ? t - this.hubFx : 99;
+    if (fx >= 0 && fx < 2.5) {
+      const k = fx / 2.5;
+      ctx.save(); Icons.rr(ctx, px + 2, py + 2, s - 4, s - 4, 10); ctx.clip();
+      const y = py + (k * 2 % 1) * s;
+      const g = ctx.createLinearGradient(0, y - 18, 0, y + 2);
+      g.addColorStop(0, 'rgba(127,212,255,0)'); g.addColorStop(1, 'rgba(127,212,255,0.8)');
+      ctx.fillStyle = g; ctx.fillRect(px, y - 18, s, 20);
+      ctx.restore();
+      ctx.strokeStyle = `rgba(255,210,63,${1 - k})`; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(cx, cy, s * 0.5 + k * 90, 0, 7); ctx.stroke();
+      if (Math.random() < 0.5) this.spawn('spark', px + Math.random() * s, py + Math.random() * s);
+    }
   },
 
   drawElevator(ctx, px, py, s, t) {

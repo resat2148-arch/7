@@ -168,6 +168,7 @@ const Main = {
           if (un) UI.toast('🔓 ' + T('newUnlock') + '<div class="unlocks">' + un + '</div>', 'good');
           SDK.happytime();
           this.confetti();
+          this.hubUpgradeFx();
           saveGame();
           break;
         }
@@ -187,6 +188,20 @@ const Main = {
         }
       }
     }
+  },
+
+  // HUB grows a module each milestone: play the upgrade effect and announce what was added
+  hubUpgradeFx() {
+    R.hubFx = performance.now() / 1000;
+    const lv = hubLevel();
+    const hub = [...G.ents.values()].find(e => e.kind === 'hub');
+    if (hub) R.addFloat((hub.x + 2) * TILE, hub.y * TILE - 10, `HUB Lv ${lv}  +${HUB_MW_PER_LEVEL} MW`, '#ffd23f');
+    const mod = HUB_MODULES.find(m => m.at === lv);
+    const stage = HUB_STAGES.find(st => st.at === lv && st.at > 0);
+    const parts = [];
+    if (stage) parts.push(`<b>${L(stage.name)}</b>`);
+    if (mod) parts.push(L(mod.name));
+    UI.toast(`🏗 ${T('hubUpgraded', lv)}${parts.length ? ': ' + parts.join(' · ') : ''} (+${HUB_MW_PER_LEVEL} MW)`, 'good');
   },
 
   confetti() {

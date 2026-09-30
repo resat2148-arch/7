@@ -440,7 +440,14 @@ const UI = {
   },
 
   hubHTML() {
-    let html = `<p class="muted">${T('hubDesc')}</p>`;
+    const lv = hubLevel(), st = HUB_STAGES[hubStage()];
+    const next = HUB_MODULES.find(m => m.at > lv);
+    const built = HUB_MODULES.filter(m => m.at <= lv).map(m => L(m.name)).join(', ');
+    let html = `<div class="notice hub-lv"><div><b style="color:${st.trim}">HUB Lv ${lv} · ${L(st.name)}</b> · ⚡ ${hubPower()} MW</div>
+      <div class="muted small">${T('hubLvHelp', HUB_MW_PER_LEVEL)}</div>
+      ${built ? `<div class="small">✅ ${built}</div>` : ''}
+      ${next ? `<div class="small">🔜 ${T('hubNext', next.at - lv, L(next.name))}</div>` : ''}</div>
+      <p class="muted">${T('hubDesc')}</p>`;
     for (let tier = 0; tier < TIER_PHASE.length; tier++) {
       const ms = MILESTONES.filter(m => m.tier === tier);
       if (!ms.length) continue;

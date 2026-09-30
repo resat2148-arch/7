@@ -125,7 +125,7 @@ function recipeMainOut(id) { return Object.keys(RECIPES[id].out)[0]; }
 // Buildings. kind drives simulation behavior. size = square side in tiles.
 const BUILDINGS = {
   hub: { kind: 'hub', size: 4, name: n('The HUB', 'HUB'), cat: null, cost: {}, gen: 30, reveal: 16, color: '#ff9a3c',
-    desc: n('Your landing base. Items belted in go to Central Storage. Provides 30 MW.', 'İniş üssün. Bantla gelen eşyalar Merkez Depoya gider. 30 MW sağlar.') },
+    desc: n('Your landing base. Items belted in go to Central Storage. Provides 30 MW, +5 MW per milestone.', 'İniş üssün. Bantla gelen eşyalar Merkez Depoya gider. 30 MW, her kilometre taşında +5 MW sağlar.') },
   belt1: { kind: 'belt', size: 1, tier: 1, speed: 1, name: n('Conveyor Belt Mk.1', 'Konveyör Bandı Mk.1'), cat: 'logistics', cost: { iron_plate: 1 }, reveal: 4,
     desc: n('Moves 120 items/min. Drag to draw.', 'Dakikada 120 eşya taşır. Çizmek için sürükle.') },
   belt2: { kind: 'belt', size: 1, tier: 2, speed: 2, name: n('Conveyor Belt Mk.2', 'Konveyör Bandı Mk.2'), cat: 'logistics', cost: { iron_plate: 1, screw: 2 }, reveal: 4,
@@ -260,3 +260,26 @@ const TUTORIAL = [
   { id: 'hub2', ms: 'm0_2', text: n('Collect 20 Iron Plates and 20 Iron Rods, then press <b>Complete</b> below to finish <b>HUB Upgrade 2</b>.', '20 Demir Levha ve 20 Demir Çubuk topla, sonra <b>HUB Yükseltme 2</b>\'yi bitirmek için aşağıdaki <b>Tamamla</b>\'ya bas.') },
   { id: 'power', text: n('More machines need more power. Place a <b>Biomass Burner</b> (Power tab), click it and press <b>+ Fuel</b>. Click trees to collect Leaves and Wood.', 'Daha çok makine daha çok güç ister. Bir <b>Biyokütle Yakıcı</b> yerleştir (Güç sekmesi), ona tıkla ve <b>+ Yakıt</b>\'a bas. Yaprak ve Odun için ağaçlara tıkla.') },
 ];
+
+// HUB visual stages, reached by completed milestone count
+const HUB_STAGES = [
+  { at: 0, name: n('Landing Pod', 'İniş Kapsülü'), trim: '#ff9a3c' },
+  { at: 1, name: n('Outpost', 'Karakol'), trim: '#ff9a3c' },
+  { at: 4, name: n('Base', 'Üs'), trim: '#ffc23c' },
+  { at: 9, name: n('Command Center', 'Komuta Merkezi'), trim: '#7fd4ff' },
+  { at: 15, name: n('Orbital Command', 'Yörünge Komutası'), trim: '#c77dff' },
+];
+// Modules bolted onto the HUB as milestones are completed (shown in the HUB panel)
+const HUB_MODULES = [
+  { at: 1, name: n('Radio antenna', 'Radyo anteni') },
+  { at: 2, name: n('Storage tanks', 'Depolama tankları') },
+  { at: 3, name: n('Solar panels', 'Güneş panelleri') },
+  { at: 4, name: n('Radar dish', 'Radar çanağı') },
+  { at: 6, name: n('Control room lights', 'Kontrol odası ışıkları') },
+  { at: 8, name: n('Corner beacons', 'Köşe fenerleri') },
+  { at: 10, name: n('Hologram ring', 'Hologram halkası') },
+  { at: 13, name: n('Energy core', 'Enerji çekirdeği') },
+  { at: 16, name: n('Orbital uplink', 'Yörünge bağlantısı') },
+  { at: 20, name: n('Golden aura', 'Altın hale') },
+];
+const HUB_MW_PER_LEVEL = 5;

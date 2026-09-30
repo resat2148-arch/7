@@ -221,6 +221,11 @@ function deconstruct(e, quiet) {
   return true;
 }
 
+// ---------- HUB upgrades ----------
+function hubLevel() { return G.milestones.size; }
+function hubStage() { let k = 0; HUB_STAGES.forEach((st, i) => { if (hubLevel() >= st.at) k = i; }); return k; }
+function hubPower() { return BUILDINGS.hub.gen + HUB_MW_PER_LEVEL * hubLevel(); }
+
 // ---------- Belt routing ----------
 // Finds a belt route from tile a to tile b that avoids buildings, rocks, water and fog,
 // preferring few turns. Clicking a building as start/end uses its whole footprint.
@@ -488,7 +493,7 @@ function simTick(dt) {
   let cap = 0, demand = 0;
   for (const e of ents.values()) {
     const d = BUILDINGS[e.type];
-    if (e.kind === 'hub') cap += d.gen;
+    if (e.kind === 'hub') cap += hubPower();
     else if (e.kind === 'gen') {
       if (d.geyser) { e.hasFuel = !!e.node; }
       else {
