@@ -265,21 +265,6 @@ const Icons = (() => {
         }
         break;
       }
-      case 'crystal': {
-        ctx.fillStyle = shade(c, -0.2);
-        ctx.beginPath(); ctx.moveTo(0.5, 0.1); ctx.lineTo(0.72, 0.3); ctx.lineTo(0.72, 0.72); ctx.lineTo(0.5, 0.9); ctx.lineTo(0.28, 0.72); ctx.lineTo(0.28, 0.3); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = shade(c, 0.35);
-        ctx.beginPath(); ctx.moveTo(0.5, 0.1); ctx.lineTo(0.5, 0.9); ctx.lineTo(0.28, 0.72); ctx.lineTo(0.28, 0.3); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(0.36, 0.3, 0.04, 0.3);
-        break;
-      }
-      case 'powder': {
-        ctx.fillStyle = shade(c, -0.15);
-        ctx.beginPath(); ctx.moveTo(0.12, 0.78); ctx.quadraticCurveTo(0.5, 0.12, 0.88, 0.78); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = shade(c, 0.3);
-        [[0.4, 0.5], [0.55, 0.62], [0.5, 0.4], [0.64, 0.7], [0.32, 0.68]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 0.035, 0, 7); ctx.fill(); });
-        break;
-      }
       case 'glass': {
         ctx.fillStyle = 'rgba(159,227,255,0.55)';
         rr(ctx, 0.18, 0.14, 0.64, 0.72, 0.05); ctx.fill();

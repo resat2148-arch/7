@@ -50,9 +50,6 @@ const ITEMS = {
   hsc:            { name: n('High-Speed Connector', 'Yüksek Hızlı Konektör'), shape: 'hsc', color: '#f3d25a', c2: '#5d6b78', value: 3776 },
   supercomputer:  { name: n('Supercomputer', 'Süper Bilgisayar'), shape: 'super', color: '#2e333b', c2: '#ff5ad1', value: 97352 },
   // Consumer electronics branch
-  raw_quartz:     { name: n('Raw Quartz', 'Ham Kuvars'), shape: 'ore', color: '#e89bd0', c2: '#fff0fa', value: 15 },
-  quartz_crystal: { name: n('Quartz Crystal', 'Kuvars Kristali'), shape: 'crystal', color: '#f2b8e0', value: 50 },
-  silica:         { name: n('Silica', 'Silika'), shape: 'powder', color: '#e6e3f0', value: 20 },
   glass:          { name: n('Glass', 'Cam'), shape: 'glass', color: '#9fe3ff', value: 30 },
   battery:        { name: n('Battery', 'Pil'), shape: 'battery', color: '#5ad17a', c2: '#2e333b', value: 400 },
   speaker:        { name: n('Speaker', 'Hoparlör'), shape: 'speaker', color: '#2e333b', c2: '#9aa3ad', value: 350 },
@@ -110,14 +107,12 @@ const RECIPES = {
   hsc:            { m: 'manufacturer', in: { quickwire: 56, cable: 10, circuit_board: 1 }, out: { hsc: 1 }, t: 16 },
   supercomputer:  { m: 'manufacturer', in: { computer: 4, ai_limiter: 2, hsc: 3, plastic: 28 }, out: { supercomputer: 1 }, t: 32 },
   // Consumer electronics
-  quartz_crystal: { m: 'constructor', in: { raw_quartz: 5 }, out: { quartz_crystal: 3 }, t: 8, hand: true },
-  silica:         { m: 'constructor', in: { raw_quartz: 3 }, out: { silica: 5 }, t: 8, hand: true },
-  glass:          { m: 'smelter', in: { silica: 2 }, out: { glass: 1 }, t: 4 },
+  glass:          { m: 'smelter', in: { limestone: 2 }, out: { glass: 1 }, t: 4 },
   battery:        { m: 'assembler', in: { plastic: 2, copper_sheet: 2 }, out: { battery: 1 }, t: 8, hand: true },
   speaker:        { m: 'assembler', in: { wire: 8, plastic: 2 }, out: { speaker: 1 }, t: 8, hand: true },
   display:        { m: 'assembler', in: { glass: 3, circuit_board: 1 }, out: { display: 1 }, t: 12, hand: true },
-  microchip:      { m: 'assembler', in: { silica: 4, quickwire: 8 }, out: { microchip: 2 }, t: 10, hand: true },
-  camera_module:  { m: 'assembler', in: { quartz_crystal: 2, microchip: 1 }, out: { camera_module: 1 }, t: 12, hand: true },
+  microchip:      { m: 'assembler', in: { copper_sheet: 2, quickwire: 8 }, out: { microchip: 2 }, t: 10, hand: true },
+  camera_module:  { m: 'assembler', in: { glass: 2, microchip: 1 }, out: { camera_module: 1 }, t: 12, hand: true },
   television:     { m: 'electronics_factory', in: { display: 2, circuit_board: 2, speaker: 2, plastic: 6 }, out: { television: 1 }, t: 30 },
   smartphone:     { m: 'electronics_factory', in: { display: 1, microchip: 2, battery: 1, camera_module: 1 }, out: { smartphone: 1 }, t: 20 },
   laptop:         { m: 'electronics_factory', in: { display: 2, computer: 1, battery: 2, plastic: 4 }, out: { laptop: 1 }, t: 40 },
@@ -235,7 +230,7 @@ const MILESTONES = [
   { id: 'm6_ind', tier: 6, name: n('Industrial Manufacturing', 'Endüstriyel İmalat'), cost: { circuit_board: 100, motor: 50, plastic: 200 }, b: ['manufacturer'], r: ['computer', 'hmf', 'modular_engine', 'acu'] },
   { id: 'm6_cat', tier: 6, name: n('Caterium Electronics', 'Katerium Elektroniği'), cost: { circuit_board: 50, vf: 50 }, b: ['geothermal'], r: ['caterium_ingot', 'quickwire', 'ai_limiter'] },
   { id: 'm7_super', tier: 7, name: n('Supercomputing', 'Süper Hesaplama'), cost: { computer: 50, circuit_board: 200, hmf: 20 }, b: [], r: ['hsc', 'supercomputer'] },
-  { id: 'm5_quartz', tier: 5, name: n('Quartz Processing', 'Kuvars İşleme'), cost: { circuit_board: 30, motor: 20, plastic: 100 }, b: [], r: ['quartz_crystal', 'silica', 'glass', 'battery', 'speaker'] },
+  { id: 'm5_components', tier: 5, name: n('Electronic Components', 'Elektronik Bileşenler'), cost: { circuit_board: 30, motor: 20, plastic: 100 }, b: [], r: ['glass', 'battery', 'speaker'] },
   { id: 'm6_consumer', tier: 6, name: n('Consumer Electronics', 'Tüketici Elektroniği'), cost: { glass: 100, battery: 50, speaker: 50 }, b: ['electronics_factory'], r: ['display', 'television'], shards: 2 },
   { id: 'm7_mobile', tier: 7, name: n('Mobile Technology', 'Mobil Teknoloji'), cost: { television: 20, display: 50, ai_limiter: 50 }, b: [], r: ['microchip', 'camera_module', 'smartphone', 'laptop', 'game_console'], shards: 3 },
   { id: 'm7_miner', tier: 7, name: n('Miner Mk.3', 'Madenci Mk.3'), cost: { hmf: 10, computer: 20 }, b: ['miner3'], r: [], shards: 3 },
@@ -262,7 +257,6 @@ const NODE_TYPES = {
   caterium_ore: { color: '#e8c040', glow: '#fff08a' },
   crude_oil: { color: '#1b1224', glow: '#b07cff' },
   geyser: { color: '#6a7a88', glow: '#d8f4ff' },
-  raw_quartz: { color: '#e89bd0', glow: '#ffd6f2' },
 };
 
 const ACHIEVEMENTS = [

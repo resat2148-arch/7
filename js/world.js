@@ -157,20 +157,6 @@ const World = {
       if (terr[y * W + x] === TERR.ROCK || terr[y * W + x] === TERR.WATER) terr[y * W + x] = TERR.GRASS;
     }
 
-    // Raw quartz (added later): separate RNG so older saves keep the same slugs and crash sites
-    const qrnd = mulberry32(seed * 104729 + 71);
-    let qn = 0; tries = 0;
-    while (qn < 12 && tries++ < 4000) {
-      const a = qrnd() * Math.PI * 2, d = 26 + qrnd() * 52;
-      const x = Math.round(cx + Math.cos(a) * d), y = Math.round(cy + Math.sin(a) * d);
-      if (!free(x, y, 3)) continue;
-      if (slugs.some(sl => Math.abs(sl.x - x) < 2 && Math.abs(sl.y - y) < 2)) continue;
-      if (crashes.some(c => Math.abs(c.x - x) < 3 && Math.abs(c.y - y) < 3)) continue;
-      const r = qrnd() + d / 400;
-      addNode('raw_quartz', x, y, r > 0.85 ? 'pure' : r > 0.35 ? 'normal' : 'impure');
-      qn++;
-    }
-
     return { W, H, terr, shade, trees, nodes, nodeAt, slugs, crashes, cx, cy };
   },
 };

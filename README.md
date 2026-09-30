@@ -23,7 +23,7 @@ python3 -m http.server 8000   # sonra http://localhost:8000
 | Hız aşırtma + Güç Parçaları (Power Slug) | Haritadaki mavi/sarı/mor salyangozlar 1/2/5 parça veriyor. Makine başına 3 yuva var, saat hızı en fazla %250. Güç tüketimi `clock^1.32` ile artıyor. |
 | Kaza alanları → Sabit Disk → MAM alternatif tarifleri | 16 kaza alanı ve 16 alternatif tarif (Cast Screw, Solid Steel Ingot, Bolted Frame…). Her diskte 2 seçenekten biri seçiliyor. |
 | AWESOME Sink + kupon dükkanı | Kaynak Havuzu herhangi bir eşyayı puana çeviriyor, puanlar kupon basıyor. Kuponla Güç Parçası, Sabit Disk ve Malzeme Sandığı alınıyor. |
-| *(Satisfactory'de yok, ek)* Tüketici elektroniği | Ham Kuvars düğümleri → Kuvars Kristali, Silika → Cam, Pil, Hoparlör, Ekran Paneli, Mikroçip, Kamera Modülü. Yeni **Elektronik Fabrikası** bunlardan Televizyon, Akıllı Telefon, Dizüstü Bilgisayar ve Oyun Konsolu üretiyor. Son Uzay Asansörü fazı 50 akıllı telefon istiyor. |
+| *(Satisfactory'de yok, ek)* Tüketici elektroniği | Mevcut kaynaklardan yeni parçalar: Cam (kireçtaşı), Pil, Hoparlör, Ekran Paneli, Mikroçip, Kamera Modülü. Yeni **Elektronik Fabrikası** bunlardan Televizyon, Akıllı Telefon, Dizüstü Bilgisayar ve Oyun Konsolu üretiyor. Son Uzay Asansörü fazı 50 akıllı telefon istiyor. |
 | Boyutsal Depo Yükleyici | Uzaktaki üretimi merkeze taşıyor (120/dk). |
 | El ile kazma ve üretim | Düğüme tıklayınca cevher, ağaca tıklayınca yaprak/odun geliyor. Parçalar basılı tutarak elle üretiliyor. |
 | Söküm %100 iade | Aynen korundu. Deneme yapmak cezasız. |

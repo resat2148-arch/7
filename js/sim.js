@@ -945,23 +945,26 @@ function deserialize(json) {
   G.playTime = s.pt || 0;
   G.cooldowns = s.cd || {};
   if (s.st) { G.stats.delivered = s.st.d || {}; G.stats.flow = s.st.f || {}; G.stats.slugs = s.st.s || 0; G.stats.sinkRate = s.st.sr || 0; }
+  // forget items that were removed from the game
+  const known = (o) => { if (o) for (const k in o) if (!ITEMS[k]) delete o[k]; return o; };
+  known(G.inv); known(G.stats.delivered); known(G.stats.flow);
   unrle(s.rev, G.revealed);
   for (const o of s.ents) {
     if (!BUILDINGS[o.t]) continue;
     const e = createEnt(o.t, o.x, o.y, o.d);
-    if (o.it) e.items = o.it.map(a => ({ i: a[0], p: a[1] }));
-    if (o.r !== undefined) e.recipe = o.r;
+    if (o.it) e.items = o.it.filter(a => ITEMS[a[0]]).map(a => ({ i: a[0], p: a[1] }));
+    if (o.r !== undefined) e.recipe = RECIPES[o.r] ? o.r : null;
     if (o.c) e.clock = o.c;
     if (o.s) e.shardsUsed = o.s;
-    if (o.ib) e.inb = o.ib;
-    if (o.ob) e.outb = o.ob;
+    if (o.ib) e.inb = known(o.ib);
+    if (o.ob) e.outb = known(o.ob);
     if (o.p) e.prog = o.p;
     if (o.cr) e.crafting = true;
     if (o.o) e.out = o.o;
-    if (o.f) e.fuel = o.f;
+    if (o.f) e.fuel = known(o.f);
     if (o.b) e.burn = o.b;
-    if (o.bf) e.buf = o.bf;
-    if (o.sl) e.slots = o.sl;
+    if (o.bf && ITEMS[o.bf]) e.buf = o.bf;
+    if (o.sl) e.slots = o.sl.map(v => (v && ITEMS[v] ? v : null));
     if (o.m) e.made = o.m;
     placeEnt(e);
   }
