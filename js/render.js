@@ -510,13 +510,16 @@ const R = {
       ctx.fillStyle = '#2a2f37'; ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, 7); ctx.fill();
       ctx.restore();
     }
-    // recipe icon
+    // recipe icon, with the machine's emblem as a badge; without a recipe the emblem fills the centre
     if (e.recipe) {
       const out = recipeMainOut(e.recipe);
       const is = Math.min(s * 0.5, 40);
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.beginPath(); ctx.arc(cx, cy, is * 0.62, 0, 7); ctx.fill();
       ctx.drawImage(Icons.get(out, 48), cx - is / 2, cy - is / 2, is, is);
+      this.drawEmblem(ctx, e.type, px + 13, py + s - 17, 7.5);
+    } else {
+      this.drawEmblem(ctx, e.type, cx, cy, s * 0.3);
     }
     // progress bar
     if (e.crafting && RECIPES[e.recipe]) {
@@ -526,6 +529,72 @@ const R = {
     }
     if (!ghost) this.drawLed(ctx, e, px + 9, py + 13);
     if (e.clock > 1.001) this.drawOC(ctx, px + s - 10, py + s - 16);
+  },
+
+  // Symbol that identifies a production machine: flame, hammer, gears, crucible, flask, factory
+  drawEmblem(ctx, type, cx, cy, r) {
+    const accent = { smelter: '#ff7b2e', constructor: '#ff9a3c', assembler: '#ffc23c', foundry: '#ff5a3c', refinery: '#b07cff', manufacturer: '#4fb3ff' }[type] || '#ff9a3c';
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = '#1b1f25';
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+    ctx.strokeStyle = accent; ctx.lineWidth = Math.max(1, r * 0.12);
+    ctx.stroke();
+    ctx.scale(r / 10, r / 10);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    switch (type) {
+      case 'smelter': {
+        ctx.fillStyle = '#ff7b2e';
+        ctx.beginPath(); ctx.moveTo(0, -7); ctx.bezierCurveTo(6, -1, 6, 6, 0, 6.5); ctx.bezierCurveTo(-6, 6, -6, -1, 0, -7); ctx.fill();
+        ctx.fillStyle = '#ffd23f';
+        ctx.beginPath(); ctx.moveTo(0, -1); ctx.bezierCurveTo(3, 2, 3, 5.5, 0, 5.5); ctx.bezierCurveTo(-3, 5.5, -3, 2, 0, -1); ctx.fill();
+        break;
+      }
+      case 'constructor': {
+        // hammer over a plate
+        ctx.fillStyle = '#9aa3ad'; ctx.fillRect(-6, 4, 12, 2.5);
+        ctx.save(); ctx.rotate(-0.7);
+        ctx.fillStyle = '#c98a4b'; ctx.fillRect(-1, -2, 2, 10);
+        ctx.fillStyle = '#ff9a3c'; ctx.fillRect(-4.5, -6, 9, 4.5);
+        ctx.restore();
+        break;
+      }
+      case 'assembler': {
+        const gear = (x, y, rr, n, col) => {
+          ctx.fillStyle = col;
+          ctx.save(); ctx.translate(x, y);
+          for (let k = 0; k < n; k++) { ctx.rotate(Math.PI * 2 / n); ctx.fillRect(-1.1, -rr - 1.6, 2.2, 2.2); }
+          ctx.beginPath(); ctx.arc(0, 0, rr, 0, 7); ctx.fill();
+          ctx.fillStyle = '#1b1f25'; ctx.beginPath(); ctx.arc(0, 0, rr * 0.4, 0, 7); ctx.fill();
+          ctx.restore();
+        };
+        gear(-2.5, -1.5, 3.6, 8, '#ffc23c');
+        gear(3.5, 3.2, 2.6, 6, '#9aa3ad');
+        break;
+      }
+      case 'foundry': {
+        ctx.fillStyle = '#9aa3ad';
+        ctx.beginPath(); ctx.moveTo(-6, -5); ctx.lineTo(4, -5); ctx.lineTo(2.5, 3); ctx.lineTo(-4.5, 3); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ff5a3c'; ctx.fillRect(-5.2, -4.2, 8.4, 2.4);
+        ctx.fillStyle = '#ffb347'; ctx.beginPath(); ctx.arc(4.5, 5.5, 1.8, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(3.5, -4.5); ctx.quadraticCurveTo(6.5, -3, 4.8, 3.8); ctx.lineTo(4.2, 3.8); ctx.quadraticCurveTo(5, -2, 3.5, -3.5); ctx.fill();
+        break;
+      }
+      case 'refinery': {
+        ctx.fillStyle = '#d9dde2';
+        ctx.beginPath(); ctx.moveTo(-1.8, -7); ctx.lineTo(1.8, -7); ctx.lineTo(1.8, -2); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.lineTo(-1.8, -2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#b07cff';
+        ctx.beginPath(); ctx.moveTo(-3.8, 1.5); ctx.lineTo(3.8, 1.5); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill();
+        break;
+      }
+      case 'manufacturer': {
+        ctx.fillStyle = '#4fb3ff';
+        ctx.beginPath(); ctx.moveTo(-7, 6); ctx.lineTo(-7, -1); ctx.lineTo(-3, -4); ctx.lineTo(-3, -1); ctx.lineTo(1, -4); ctx.lineTo(1, -1); ctx.lineTo(5, -4); ctx.lineTo(5, -7); ctx.lineTo(7, -7); ctx.lineTo(7, 6); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#1b1f25'; [-4.5, -0.5, 3.5].forEach(x => ctx.fillRect(x, 1.5, 2, 2));
+        break;
+      }
+    }
+    ctx.restore();
   },
 
   drawLed(ctx, e, x, y) {
@@ -711,8 +780,9 @@ const R = {
 
   // Building icon for UI buttons
   buildingIcon(type) {
-    this._bicons = this._bicons || {};
-    if (this._bicons[type]) return this._bicons[type];
+    // Map, not {}: a plain object would return Object.prototype.constructor for 'constructor'
+    this._bicons = this._bicons || new Map();
+    if (this._bicons.has(type)) return this._bicons.get(type);
     const d = BUILDINGS[type];
     const c = document.createElement('canvas');
     c.width = c.height = 64;
@@ -720,14 +790,15 @@ const R = {
     const scale = 64 / (Math.max(d.size, 1) * TILE);
     ctx.scale(scale, scale);
     const e = { type, kind: d.kind, x: 0, y: 0, dir: 0, size: d.size, status: 'working', anim: 0.3, items: [], slots: [null, null, null, null], fuel: {}, id: 1 };
-    if (d.kind === 'machine') { const rs = Object.keys(RECIPES).filter(r => RECIPES[r].m === type && !RECIPES[r].alt); e.recipe = null; e._iconOut = rs[0]; }
+    if (d.kind === 'machine') e.recipe = null;
     const savedRand = Math.random;
     Math.random = () => 1; // no particles
     if (d.kind === 'belt') this.drawBelt(ctx, e, 0, false);
     else if (LOGI[d.kind]) this.drawLogi(ctx, e, 0);
     else this.drawBuilding(ctx, e, 0, true);
     Math.random = savedRand;
-    this._bicons[type] = c.toDataURL();
-    return this._bicons[type];
+    const url = c.toDataURL();
+    this._bicons.set(type, url);
+    return url;
   },
 };

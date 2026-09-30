@@ -98,6 +98,12 @@ kbd { font-size: 10px; background: #0006; border-radius: 3px; padding: 0 4px; ma
 #tools { display: flex; gap: 6px; overflow-x: auto; }
 .tool { position: relative; width: 60px; height: 60px; flex: none; border-radius: 10px; background: var(--panel2); border: 2px solid var(--line); padding: 4px; }
 .tool img { width: 100%; height: 100%; }
+.tool { width: 72px; height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 3px; }
+.tool img { width: 46px; height: 46px; }
+.tool .tname { font-size: 9.5px; line-height: 1.15; font-weight: 600; color: var(--muted); max-width: 68px; text-align: center;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tool.on .tname { color: var(--text); }
+.big-emoji { font-size: 30px; line-height: 1; }
 .tool .key { position: absolute; top: 1px; left: 4px; font-size: 10px; color: var(--muted); font-weight: 800; }
 .tool:hover { border-color: #ffc98f; }
 .tool.on { border-color: var(--accent); background: #3a2a18; box-shadow: 0 0 12px #ff9a3c80; }
@@ -247,7 +253,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   #goal { width: 190px; padding: 8px; }
   .goal-row .rate { display: none; }
   .tip { display: none; }
-  .tool { width: 50px; height: 50px; }
+  .tool { width: 56px; }
+  .tool img { width: 38px; height: 38px; }
   .side-btn { width: 44px; height: 44px; }
   .side-ico { font-size: 20px; }
   #minimap { display: none; }
@@ -264,5 +271,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 @media (max-height: 620px) and (min-width: 601px) {
   #minimap { width: 120px; height: 120px; }
   #goal { max-height: calc(100vh - 150px); overflow-y: auto; }
-  .tool { width: 50px; height: 50px; }
+  .tool { width: 56px; }
+  .tool img { width: 38px; height: 38px; }
 }

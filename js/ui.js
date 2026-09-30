@@ -111,7 +111,26 @@ const UI = {
     switch (act) {
       case 'open': this.openPanel(this.panel === arg ? null : arg); Sound.sfx.click(); break;
       case 'close': this.openPanel(null); break;
-      case 'close-inspect': this.selected = null; this.renderInspect(); break;
+      case 'close-inspect': this.selected = null; this.selNode = null; this.renderInspect(true); break;
+      case 'node-mine': {
+        const nd = G.nodes[this.selNode];
+        if (nd && handMine(nd.x, nd.y)) { R.burst(nd.x * TILE + 16, nd.y * TILE + 16, 5, 'dust'); this.renderInspect(true); }
+        break;
+      }
+      case 'node-build': {
+        const nd = G.nodes[this.selNode];
+        const b = nd && this.nodeExtractor(nd);
+        if (!b) break;
+        if (!canAfford(BUILDINGS[b].cost)) { this.toast(T('notEnough'), 'bad'); Sound.sfx.error(); break; }
+        let e = null;
+        const sz = BUILDINGS[b].size;
+        for (let oy = 0; oy < sz && !e; oy++) for (let ox = 0; ox < sz && !e; ox++) {
+          if (!checkPlace(b, nd.x - ox, nd.y - oy)) e = build(b, nd.x - ox, nd.y - oy, 0);
+        }
+        if (e) { Sound.sfx.place(); R.burst(nd.x * TILE + 16, nd.y * TILE + 16, 12, 'dust'); this.selNode = null; this.selected = e.id; this.renderInspect(true); }
+        else { this.toast(T('cantPlace'), 'bad'); Sound.sfx.error(); }
+        break;
+      }
       case 'ms-complete':
         if (completeMilestone(arg)) this.renderPanel(true);
         break;
@@ -204,6 +223,7 @@ const UI = {
     this.tool = t;
     this.beltPath = null;
     this.beltStart = null;
+    if (t) this.selNode = null;
     if (t && BUILDINGS[t] && BUILDINGS[t].kind === 'belt' && (this.beltHints = (this.beltHints || 0) + 1) <= 3) this.toast('🛤 ' + T('beltHint'));
     if (t !== null && t !== this.copiedFor) this.copyRecipe = null;
     if (t) { this.selected = null; this.renderInspect(true); }
@@ -232,9 +252,13 @@ const UI = {
     $('#tools').innerHTML = list.map((b, i) => {
       const afford = canAfford(BUILDINGS[b].cost);
       return `<button class="tool ${this.tool === b ? 'on' : ''} ${afford ? '' : 'poor'}" data-tool="${b}">
-        <img src="${R.buildingIcon(b)}" alt=""><span class="key">${i + 1}</span></button>`;
+        <img src="${R.buildingIcon(b)}" alt=""><span class="key">${i + 1}</span><span class="tname">${this.shortName(b)}</span></button>`;
     }).join('');
     $('#mobileCtl').classList.toggle('show', !!this.tool);
+  },
+  shortName(b) {
+    return L(BUILDINGS[b].name).replace('Conveyor Belt', 'Belt').replace('Konveyör Bandı', 'Bant')
+      .replace('Conveyor ', '').replace('Konveyör ', '').replace('Dimensional Depot ', '').replace('Boyutsal Depo ', '');
   },
   toolList() { return Object.keys(BUILDINGS).filter(b => BUILDINGS[b].cat === this.cat && G.unlockedB.has(b)); },
 
@@ -596,6 +620,7 @@ const UI = {
   renderInspect(force) {
     const el = $('#inspect');
     const e = this.selected ? ent(this.selected) : null;
+    if (!e && this.selNode != null) { el.classList.add('show'); this.setHTML(el, 'inspect', this.nodeHTML(G.nodes[this.selNode]), force); return; }
     if (!e) { el.classList.remove('show'); this.lastHTML.inspect = ''; return; }
     el.classList.add('show');
     const d = def(e);
@@ -643,6 +668,44 @@ const UI = {
     if (d.power) html += `<div class="muted small">⚡ ${T('consumes')}: ${fmt(d.power * clockPow(clockMult))} MW</div>`;
     if (e.kind !== 'hub') html += `<div class="insp-foot"><button class="btn danger small" data-act="decon">✖ ${T('deconstruct')}</button></div>`;
     this.setHTML(el, 'inspect', html, force);
+  },
+
+  // Info panel for a resource node: purity, extraction rates, what it is used for, quick actions
+  nodeHTML(nd) {
+    const pur = PURITY[nd.purity];
+    const solid = nd.type !== 'crude_oil' && nd.type !== 'geyser';
+    const name = nd.type === 'geyser' ? T('geyser') : L(ITEMS[nd.type].name);
+    const icon = nd.type === 'geyser' ? '<span class="big-emoji">♨️</span>' : Icons.img(nd.type, 'ico big');
+    const on = entAt(nd.x, nd.y);
+    let html = `<div class="insp-head">${icon}<div><b>${name}</b><br><span class="status" style="background:${pur.color}">${T(pur.key)} ×${pur.mult}</span></div><button class="x" data-act="close-inspect">✕</button></div>`;
+    if (nd.type !== 'geyser') html += `<div class="io-row muted small">${T('inStorage')}: <b>${fmt(G.inv[nd.type] || 0)}</b></div>`;
+    html += `<div class="sect">${T('extraction')}</div>`;
+    const extractors = nd.type === 'geyser' ? ['geothermal'] : nd.type === 'crude_oil' ? ['oil_extractor'] : ['miner1', 'miner2', 'miner3'];
+    for (const b of extractors) {
+      const d = BUILDINGS[b];
+      const val = d.geyser ? `+${d.gen} MW` : `${fmt(d.rate * pur.mult)}${T('perMin')}`;
+      const ok = G.unlockedB.has(b);
+      html += `<div class="io-row ${ok ? '' : 'muted'}"><img class="ico" src="${R.buildingIcon(b)}" alt="">${L(d.name)} <b style="margin-left:auto">${ok ? '' : '🔒 '}${val}</b></div>`;
+    }
+    if (nd.type !== 'geyser') {
+      const uses = Object.keys(RECIPES).filter(id => RECIPES[id].in[nd.type] && (RECIPES[id].alt ? G.alts.has(id) : G.unlockedR.has(id)));
+      html += `<div class="sect">${T('usedIn')}</div>`;
+      html += uses.length ? uses.map(id => `<div class="io-row">${Icons.img(recipeMainOut(id))}${recipeName(id)} <small>${L(BUILDINGS[RECIPES[id].m].name)}</small></div>`).join('') : `<div class="muted small">${T('noneYet')}</div>`;
+    }
+    if (on) html += `<div class="notice small">${T('onNode')}: <b>${L(def(on).name)}</b></div>`;
+    else {
+      html += '<div class="insp-foot" style="gap:6px;justify-content:flex-start;flex-wrap:wrap">';
+      if (solid) html += `<button class="btn primary small" data-act="node-mine">⛏ ${T('handMineBtn')} (+${nd.purity === 'pure' ? 2 : 1})</button>`;
+      if (this.nodeExtractor(nd)) html += `<button class="btn small" data-act="node-build">🏗 ${T('buildHere', L(BUILDINGS[this.nodeExtractor(nd)].name))}</button>`;
+      html += '</div>';
+    }
+    return html;
+  },
+
+  // best unlocked building that can be placed on this node
+  nodeExtractor(nd) {
+    const list = nd.type === 'geyser' ? ['geothermal'] : nd.type === 'crude_oil' ? ['oil_extractor'] : ['miner3', 'miner2', 'miner1'];
+    return list.find(b => G.unlockedB.has(b)) || null;
   },
 
   clockHTML(e) {
@@ -709,6 +772,13 @@ const UI = {
       ctx.strokeStyle = '#ff9a3c'; ctx.lineWidth = 2.5 / z;
       ctx.setLineDash([6 / z, 4 / z]); ctx.lineDashOffset = -t * 20 / z;
       ctx.strokeRect(sel.x * TILE - 2, sel.y * TILE - 2, sel.size * TILE + 4, sel.size * TILE + 4);
+      ctx.setLineDash([]);
+    }
+    if (this.selNode != null && !sel) {
+      const nd = G.nodes[this.selNode];
+      ctx.strokeStyle = '#ff9a3c'; ctx.lineWidth = 2.5 / z;
+      ctx.setLineDash([6 / z, 4 / z]); ctx.lineDashOffset = -t * 20 / z;
+      ctx.beginPath(); ctx.arc(nd.x * TILE + 16, nd.y * TILE + 18, 24, 0, 7); ctx.stroke();
       ctx.setLineDash([]);
     }
     // tutorial pointer
@@ -856,7 +926,7 @@ const UI = {
     const ni = G.nodeAt[i];
     if (ni >= 0) {
       const nd = G.nodes[ni];
-      const name = nd.type === 'geyser' ? L({ en: 'Geyser', tr: 'Gayzer' }) : L(ITEMS[nd.type].name);
+      const name = nd.type === 'geyser' ? T('geyser') : L(ITEMS[nd.type].name);
       return `<b>${name}</b> <span style="color:${PURITY[nd.purity].color}">${T(PURITY[nd.purity].key)}</span>${nd.type !== 'crude_oil' && nd.type !== 'geyser' ? `<div class="muted">${T('handMine')}</div>` : ''}`;
     }
     if (G.trees[i]) return T('tree');

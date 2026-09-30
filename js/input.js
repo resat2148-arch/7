@@ -201,17 +201,25 @@ const Input = {
     if (e) {
       if (e.kind === 'hub' || e.kind === 'elevator') { UI.openPanel(e.kind === 'hub' ? 'hub' : 'elevator'); Sound.sfx.click(); return; }
       UI.selected = e.id;
+      UI.selNode = null;
       UI.renderInspect(true);
       Sound.sfx.click();
       return;
     }
-    if (UI.selected) { UI.selected = null; UI.renderInspect(true); }
+    const ni = G.revealed[i] ? G.nodeAt[i] : -1;
+    if (ni >= 0 && UI.selNode === ni) {
+      // second click on the selected node mines it by hand
+      if (handMine(tile.x, tile.y)) R.burst(tile.x * TILE + 16, tile.y * TILE + 16, 5, 'dust');
+      UI.renderInspect(true);
+      return;
+    }
+    if (UI.selected || UI.selNode != null) { UI.selected = null; UI.selNode = null; UI.renderInspect(true); }
     if (!G.revealed[i]) return;
+    if (ni >= 0) { UI.selNode = ni; UI.renderInspect(true); Sound.sfx.click(); return; }
     const sl = G.slugAt[i];
     if (sl >= 0 && !G.slugsTaken.has(sl)) { collectSlug(sl); R.burst(tile.x * TILE + 16, tile.y * TILE + 16, 16); return; }
     const cr = G.crashAt[i];
     if (cr >= 0 && !G.crashesOpened.has(cr)) { UI.crashModal(cr); return; }
-    if (handMine(tile.x, tile.y)) { R.burst(tile.x * TILE + 16, tile.y * TILE + 16, 5, 'dust'); return; }
     if (harvestTree(tile.x, tile.y)) { R.burst(tile.x * TILE + 16, tile.y * TILE + 10, 8, 'dust'); return; }
   },
 
@@ -232,7 +240,7 @@ const Input = {
         else if ($('#modal').classList.contains('show')) UI.closeModal();
         else if (UI.tool) UI.selectTool(null);
         else if (UI.panel) UI.openPanel(null);
-        else if (UI.selected) { UI.selected = null; UI.renderInspect(true); }
+        else if (UI.selected || UI.selNode != null) { UI.selected = null; UI.selNode = null; UI.renderInspect(true); }
         else UI.openPanel('settings');
         break;
       case 'h': UI.action('open', 'hub'); break;
