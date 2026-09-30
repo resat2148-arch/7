@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Planetfall Factory</title>
+  <meta name="description" content="Land on an alien planet, build conveyor belts, automate a giant factory and launch the Space Elevator.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="topbar">
+    <div class="brand">PLANETFALL<span>FACTORY</span></div>
+    <div class="pill power-pill"><span>⚡</span><div class="pbar"><div id="powerBar"></div></div><span id="powerText">0 / 0 MW</span></div>
+    <div class="pill" id="shardsPill">💎 <span id="shardsText">0</span></div>
+    <div class="pill" id="couponPill">🎟 <span id="couponText">0</span></div>
+    <div class="spacer"></div>
+    <button id="btnOverdrive" class="btn-ad" data-act="ad-overdrive">⏩</button>
+    <button id="btnSettings" class="icon-btn" data-act="settings">⚙</button>
+  </div>
+
+  <div id="lowpower"></div>
+  <div id="goal"></div>
+  <div id="sidebar"></div>
+
+  <div id="toolbar">
+    <div id="cats"></div>
+    <div id="tools"></div>
+  </div>
+  <div id="mobileCtl">
+    <button class="btn" data-act="rotate">⟳ R</button>
+    <button class="btn" data-act="cancel">✕ Esc</button>
+  </div>
+
+  <div id="inspect"></div>
+
+  <div id="panel">
+    <div class="panel-head"><h2 id="panelTitle"></h2><button class="x" data-act="close">✕</button></div>
+    <div id="panelBody"></div>
+  </div>
+
+  <div id="modal"><div id="modalBody" class="modal-box"></div></div>
+  <div id="toasts"></div>
+  <div id="tooltip"></div>
+  <canvas id="minimap"></canvas>
+  <div id="confetti"></div>
+
+  <div id="loading">
+    <div class="load-logo">PLANETFALL<span>FACTORY</span></div>
+    <div class="load-bar"><div></div></div>
+    <div id="loadingText">Landing…</div>
+  </div>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
