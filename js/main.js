@@ -59,6 +59,7 @@ function resetState() {
   G.shards = 0; G.hardDrives = 0; G.mamChoice = null; G.coupons = 0; G.points = 0; G.pointsTotal = 0; G.couponsPrinted = 0;
   G.slugsTaken = new Set(); G.crashesOpened = new Set(); G.treesCut = new Set();
   G.tracked = null; G.tutorial = 0; G.ach = new Set(); G.won = false;
+  G.credits = 0; G.creditsTotal = 0; G.demand = {}; G.orders = []; G.hot = null; G.ordersDone = 0; G.itemsSold = 0;
 }
 
 const Main = {
@@ -85,6 +86,7 @@ const Main = {
     UI.init();
     Input.init($('#game'));
     Minimap.init();
+    ensureOrders();
     this.unlockCount = G.unlockedB.size;
     SDK.onAdStart = () => { this.paused = true; this._wasMuted = Sound.muted; Sound.setMuted(true); };
     SDK.onAdEnd = () => { this.paused = false; Sound.setMuted(!!this._wasMuted); };
@@ -112,6 +114,8 @@ const Main = {
       const n = Math.floor(G.stats.flow[k] / 60 * cap * 0.5);
       if (n >= 1) { gains[k] = n; any = true; }
     }
+    const c = Math.floor((G.stats.creditRate || 0) / 60 * cap * 0.5);
+    if (c >= 1) { gains.credits = c; any = true; }
     return any ? { gains, secs } : null;
   },
 
@@ -160,6 +164,7 @@ const Main = {
         case 'float': R.addFloat(ev.x * TILE, ev.y * TILE, ev.text, ev.color, ev.item); break;
         case 'toast': UI.toast(ev.text); break;
         case 'coupon': Sound.sfx.coupon(); UI.toast('🎟 +1 ' + T('coupons'), 'good'); break;
+        case 'order': Sound.sfx.coupon(); UI.toast(`📦 ${T('orderDone')} 💰 +${fmt(ev.reward)}${ev.coupon ? ' · 🎟 +1' : ''}`, 'good'); break;
         case 'ach': UI.toast('🏆 ' + T('achUnlocked', ev.name), 'ach'); Sound.sfx.collect(); break;
         case 'milestone': {
           Sound.sfx.milestone();

@@ -24,6 +24,7 @@ python3 -m http.server 8000   # sonra http://localhost:8000
 | Kaza alanları → Sabit Disk → MAM alternatif tarifleri | 16 kaza alanı ve 16 alternatif tarif (Cast Screw, Solid Steel Ingot, Bolted Frame…). Her diskte 2 seçenekten biri seçiliyor. |
 | AWESOME Sink + kupon dükkanı | Kaynak Havuzu herhangi bir eşyayı puana çeviriyor, puanlar kupon basıyor. Kuponla Güç Parçası, Sabit Disk ve Malzeme Sandığı alınıyor. |
 | *(Satisfactory'de yok, ek)* Tüketici elektroniği | Mevcut kaynaklardan yeni parçalar: Cam (kireçtaşı), Pil, Hoparlör, Ekran Paneli, Mikroçip, Kamera Modülü. Yeni **Elektronik Fabrikası** bunlardan Televizyon, Akıllı Telefon, Dizüstü Bilgisayar ve Oyun Konsolu üretiyor. Son Uzay Asansörü fazı 50 akıllı telefon istiyor. |
+| *(Satisfactory'de yok, ek)* Pazar | Yeni para birimi **Kredi (💰)**. Pazar panelinde (B) üç sekme var: **Siparişler** (müşteriler piyasanın 2,5 katını öder, bazen kupon da verir), **Sat** (aynı eşyadan çok satınca fiyat bir süre düşer, 🔥 talepteki eşya %50 fazla satılır) ve **Al** (takıldığın parçayı değerinin 3 katına al, Güç Parçası ve Sabit Disk de alınabilir). **Ticaret Limanı** binası içine bantlanan her şeyi otomatik satar (HUB Yükseltme 3 ile açılır). Kredi kazancı çevrimdışı ilerlemeye de dahil. |
 | Boyutsal Depo Yükleyici | Uzaktaki üretimi merkeze taşıyor (120/dk). |
 | El ile kazma ve üretim | Düğüme tıklayınca cevher, ağaca tıklayınca yaprak/odun geliyor. Parçalar basılı tutarak elle üretiliyor. |
 | Söküm %100 iade | Aynen korundu. Deneme yapmak cezasız. |
@@ -67,7 +68,7 @@ CrazyGames'e yüklemek için tüm klasörü (`index.html`, `css/`, `js/`) zip'le
 | Döndür / İptal | R / Sağ tık, Esc | Ekrandaki butonlar |
 | Binayı kopyala (tarifiyle) | Q | – |
 | Söküm modu | X | Araç çubuğunda "Sök" |
-| Paneller | H (HUB), E (Asansör), I (Depo), M (MAM), K (Dükkan), J (Başarımlar) | Sağdaki butonlar |
+| Paneller | H (HUB), E (Asansör), I (Depo), M (MAM), B (Pazar), K (Dükkan), J (Başarımlar) | Sağdaki butonlar |
 | Kısayol çubuğu | 1-9 | – |
 
 **Lojistik kuralı:** Bir makineden **dışarı bakan** bant çıktıyı alır, makineye **doğru bakan** bant onu besler. Bu sayede binaları döndürmeye gerek kalmıyor.

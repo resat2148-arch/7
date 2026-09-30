@@ -274,3 +274,15 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   .tool { width: 56px; }
   .tool img { width: 38px; height: 38px; }
 }
+
+/* ---------- Market ---------- */
+.mkt-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.mkt-head .hot { margin-left: auto; font-size: 12.5px; }
+.mkt-tabs { display: flex; gap: 6px; margin: 8px 0; }
+.mkt-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.mkt-row { display: flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+.mkt-row .nm { flex: 1; min-width: 0; font-weight: 600; }
+.mkt-row .price { min-width: 110px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.order.ready { border-color: var(--good); }
+.gold { color: #ffd23f; }
+.bad { color: var(--bad); }

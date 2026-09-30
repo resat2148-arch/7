@@ -45,13 +45,13 @@ const UI = {
 
   buildStatic() {
     $('#sidebar').innerHTML = [
-      ['hub', '🏠', 'H'], ['elevator', '🚀', 'E'], ['inv', '📦', 'I'], ['mam', '💾', 'M'], ['shop', '🎟', 'K'], ['ach', '🏆', 'J'],
+      ['hub', '🏠', 'H'], ['elevator', '🚀', 'E'], ['inv', '📦', 'I'], ['mam', '💾', 'M'], ['market', '💰', 'B'], ['shop', '🎟', 'K'], ['ach', '🏆', 'J'],
     ].map(([p, ic, k]) => `<button class="side-btn" data-act="open" data-arg="${p}" title=""><span class="side-ico">${ic}</span><span class="side-key">${k}</span><span class="badge" id="badge-${p}"></span></button>`).join('');
     this.applyTitles();
   },
 
   applyTitles() {
-    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), shop: T('shop'), ach: T('achievements') };
+    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), market: T('market'), shop: T('shop'), ach: T('achievements') };
     document.querySelectorAll('.side-btn').forEach(b => { b.title = titles[b.dataset.arg]; });
     $('#btnSettings').title = T('settings');
     $('#loadingText').textContent = T('loading');
@@ -145,6 +145,31 @@ const UI = {
       case 'phase-submit': submitPhase(); this.renderPanel(true); break;
       case 'alt-choose': if (chooseAlt(arg || null)) { Sound.sfx.milestone(); this.toast('💾 ' + T('altUnlocked') + ': ' + (arg ? recipeName(arg) : '+3 💎'), 'good'); this.renderPanel(true); } break;
       case 'shop-buy': this.shopBuy(arg); break;
+      case 'market-tab': this.marketTab = arg; Sound.sfx.click(); this.renderPanel(true); break;
+      case 'order-deliver': if (fulfillOrder(parseInt(arg, 10))) this.renderPanel(true); break;
+      case 'order-skip': if (skipOrder(parseInt(arg, 10))) { Sound.sfx.click(); this.renderPanel(true); } break;
+      case 'sell': {
+        const [k, q] = arg.split(':');
+        const n = q === 'all' ? Math.floor(G.inv[k] || 0) : Math.min(parseInt(q, 10), Math.floor(G.inv[k] || 0));
+        const got = sellItems(k, n);
+        if (got) { Sound.sfx.coupon(); this.toast(`💰 +${fmt(got)} (${fmt(n)} × ${L(ITEMS[k].name)})`, 'good'); }
+        this.renderPanel(true);
+        break;
+      }
+      case 'buy': {
+        const [k, q] = arg.split(':');
+        if (buyItems(k, parseInt(q, 10))) { Sound.sfx.collect(); this.renderPanel(true); }
+        break;
+      }
+      case 'buy-special': {
+        const price = arg === 'shard' ? MARKET.shardPrice : MARKET.drivePrice;
+        if (G.credits < price) { this.toast(T('notEnoughCredits'), 'bad'); Sound.sfx.error(); break; }
+        G.credits -= price;
+        if (arg === 'shard') G.shards++; else G.hardDrives++;
+        Sound.sfx.collect(); this.toast(arg === 'shard' ? '💎 ' + T('gotShards', 1) : '💾 ' + T('gotHardDrive'), 'good');
+        this.renderPanel(true);
+        break;
+      }
       case 'ad-overdrive': this.adOverdrive(); break;
       case 'ad-supply': this.adSupply(); break;
       case 'set-recipe': {
@@ -316,6 +341,8 @@ const UI = {
     $('#shardsPill').title = T('shards');
     $('#couponText').textContent = G.coupons;
     $('#couponPill').title = T('coupons');
+    $('#creditText').textContent = fmt(G.credits);
+    $('#creditPill').title = T('credits');
     // overdrive button
     const now = Date.now() / 1000;
     const ob = $('#btnOverdrive');
@@ -330,6 +357,8 @@ const UI = {
     this.badge('elevator', ph && elevatorBuilt() && canAfford(ph.cost) ? '!' : '');
     this.badge('mam', G.hardDrives ? String(G.hardDrives) : '');
     this.badge('shop', G.coupons ? String(G.coupons) : '');
+    const ready = G.orders.filter(o => o && (G.inv[o.item] || 0) >= o.qty).length;
+    this.badge('market', ready ? String(ready) : '');
     document.querySelector('[data-arg="elevator"].side-btn').style.display = G.unlockedB.has('space_elevator') ? '' : 'none';
     document.querySelector('[data-arg="shop"].side-btn').style.display = G.unlockedB.has('sink') || G.coupons ? '' : 'none';
     this.updateToolAfford();
@@ -417,7 +446,7 @@ const UI = {
 
   renderPanel(force) {
     if (!this.panel) return;
-    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), shop: T('shop'), ach: T('achievements'), settings: T('settings') };
+    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), market: T('market'), shop: T('shop'), ach: T('achievements'), settings: T('settings') };
     $('#panelTitle').textContent = titles[this.panel];
     let html = '';
     switch (this.panel) {
@@ -425,6 +454,7 @@ const UI = {
       case 'elevator': html = this.elevatorHTML(); break;
       case 'inv': html = this.invHTML(); break;
       case 'mam': html = this.mamHTML(); break;
+      case 'market': html = this.marketHTML(); break;
       case 'shop': html = this.shopHTML(); break;
       case 'ach': html = this.achHTML(); break;
       case 'settings': html = this.settingsHTML(); break;
@@ -536,6 +566,65 @@ const UI = {
     const outs = Object.keys(r.out).map(k => `<span class="cost ok">${Icons.img(k)}${r.out[k]} <small>(${pm(r.out[k])}${T('perMin')})</small></span>`).join('');
     return `<div class="ms-name">${recipeName(id)} <em class="alt">${T('alt')}</em></div><div class="muted small">${L(BUILDINGS[r.m].name)} · ${r.t}s</div>
       <div class="recipe-io">${ins}<span class="arrow">➜</span>${outs}</div>`;
+  },
+
+  // ---------- Market ----------
+  marketHTML() {
+    const tab = this.marketTab || 'orders';
+    const tabs = ['orders', 'sell', 'buy'].map(t => `<button class="btn small ${tab === t ? 'on' : ''}" data-act="market-tab" data-arg="${t}">${T('mkt_' + t)}</button>`).join('');
+    const hot = G.hot && ITEMS[G.hot.item] ? `<span class="hot">🔥 ${T('hotItem')}: ${Icons.img(G.hot.item)} <b>${L(ITEMS[G.hot.item].name)}</b> ×${MARKET.hotMult} · ${fmtTime(G.hot.until - G.time)}</span>` : '';
+    let html = `<div class="notice mkt-head"><span>💰 <b>${fmt(G.credits)}</b> ${T('credits')}</span>
+      ${G.stats.creditRate ? `<span class="rate">+${fmt(G.stats.creditRate)}${T('perMin')}</span>` : ''}${hot}</div>
+      <div class="mkt-tabs">${tabs}</div>`;
+    if (tab === 'orders') {
+      html += `<p class="muted small">${T('ordersHelp')}</p><div class="ms-grid">`;
+      const now = Date.now() / 1000;
+      const skipCd = (G.cooldowns.skip || 0) - now;
+      G.orders.forEach((o, i) => {
+        if (!o) return;
+        const have = G.inv[o.item] || 0, ok = have >= o.qty;
+        html += `<div class="ms order ${ok ? 'ready' : ''}">
+          <div class="muted small">📨 ${L(CUSTOMERS[o.who % CUSTOMERS.length])}</div>
+          <div class="ms-name">${Icons.img(o.item, 'ico big')} ${fmt(o.qty)} × ${L(ITEMS[o.item].name)}</div>
+          <div class="goal-row"><div class="gbar"><div style="width:${Math.min(1, have / o.qty) * 100}%"></div><span>${fmt(Math.min(have, o.qty))} / ${fmt(o.qty)}</span></div></div>
+          <div>${T('reward')}: <b class="gold">💰 ${fmt(o.reward)}</b>${o.coupon ? ' + 🎟 1' : ''} <span class="muted small">(${T('vsSell', fmt(sellPrice(o.item) * o.qty))})</span></div>
+          <div class="ms-btns"><button class="btn ${ok ? 'primary pulse' : ''}" data-act="order-deliver" data-arg="${i}" ${ok ? '' : 'disabled'}>${T('deliver')}</button>
+            <button class="btn small" data-act="order-skip" data-arg="${i}" ${skipCd > 0 ? 'disabled' : ''} title="${T('skipOrder')}">↻ ${skipCd > 0 ? fmtTime(skipCd) : ''}</button></div>
+        </div>`;
+      });
+      html += '</div>';
+    } else if (tab === 'sell') {
+      const keys = Object.keys(ITEMS).filter(k => (G.inv[k] || 0) >= 1);
+      html += `<p class="muted small">${T('sellHelp')}</p><div class="mkt-list">`;
+      html += keys.length ? keys.map(k => {
+        const d = demandOf(k), p = sellPrice(k);
+        const trend = d < 0.95 ? `<span class="bad small">▼ ${Math.round(d * 100)}%</span>` : (G.hot && G.hot.item === k ? '<span class="gold small">🔥</span>' : '');
+        const have = Math.floor(G.inv[k]);
+        return `<div class="mkt-row">${Icons.img(k)}<span class="nm">${L(ITEMS[k].name)}<small class="muted"> ×${fmt(have)}</small></span>
+          <span class="price">💰 ${fmt(p)} ${trend}</span>
+          <button class="btn small" data-act="sell" data-arg="${k}:1">1</button>
+          <button class="btn small" data-act="sell" data-arg="${k}:10" ${have >= 10 ? '' : 'disabled'}>10</button>
+          <button class="btn small" data-act="sell" data-arg="${k}:all">${T('all')}</button></div>`;
+      }).join('') : `<div class="muted">${T('empty')}</div>`;
+      html += '</div>';
+    } else {
+      html += `<p class="muted small">${T('buyHelp', MARKET.buyMult)}</p><div class="ms-grid">
+        <div class="ms"><div class="ms-name">💎 ${T('shopShard')}</div><div class="muted small">${T('shopShardDesc')}</div>
+          <button class="btn ${G.credits >= MARKET.shardPrice ? 'primary' : ''}" data-act="buy-special" data-arg="shard" ${G.credits >= MARKET.shardPrice ? '' : 'disabled'}>💰 ${fmt(MARKET.shardPrice)}</button></div>
+        <div class="ms"><div class="ms-name">💾 ${T('shopDrive')}</div><div class="muted small">${T('shopDriveDesc')}</div>
+          <button class="btn ${G.credits >= MARKET.drivePrice ? 'primary' : ''}" data-act="buy-special" data-arg="drive" ${G.credits >= MARKET.drivePrice ? '' : 'disabled'}>💰 ${fmt(MARKET.drivePrice)}</button></div></div>
+        <div class="mkt-list">`;
+      html += marketItems().map(k => {
+        const p = buyPrice(k);
+        return `<div class="mkt-row">${Icons.img(k)}<span class="nm">${L(ITEMS[k].name)}<small class="muted"> ×${fmt(Math.floor(G.inv[k] || 0))}</small></span>
+          <span class="price">💰 ${fmt(p)}</span>
+          <button class="btn small" data-act="buy" data-arg="${k}:1" ${G.credits >= p ? '' : 'disabled'}>1</button>
+          <button class="btn small" data-act="buy" data-arg="${k}:10" ${G.credits >= p * 10 ? '' : 'disabled'}>10</button>
+          <button class="btn small" data-act="buy" data-arg="${k}:100" ${G.credits >= p * 100 ? '' : 'disabled'}>100</button></div>`;
+      }).join('');
+      html += '</div>';
+    }
+    return html;
   },
 
   shopItems() {
@@ -667,6 +756,8 @@ const UI = {
       html += `<p class="muted small">${L(d.desc)}</p><button class="btn primary" data-act="open" data-arg="hub">${T('openHub')}</button>`;
     } else if (e.kind === 'elevator') {
       html += `<button class="btn primary" data-act="open" data-arg="elevator">${T('elevator')}</button>`;
+    } else if (e.kind === 'market') {
+      html += `<p class="muted small">${L(d.desc)}</p><div class="io-row">💰 ${G.stats.creditRate ? '+' + fmt(G.stats.creditRate) + T('perMin') : '–'}</div><button class="btn primary" data-act="open" data-arg="market">${T('market')}</button>`;
     } else if (e.kind === 'sink') {
       html += `<p class="muted small">${T('sinkHelp')}</p><button class="btn primary" data-act="open" data-arg="shop">${T('shop')}</button>`;
     } else {
@@ -756,7 +847,7 @@ const UI = {
 
   offlineModal(gains, secs) {
     this._offline = gains;
-    const list = Object.keys(gains).map(k => `<span class="cost ok">${Icons.img(k)}+${fmt(gains[k])}</span>`).join('');
+    const list = Object.keys(gains).map(k => k === 'credits' ? `<span class="cost ok">💰 +${fmt(gains[k])}</span>` : `<span class="cost ok">${Icons.img(k)}+${fmt(gains[k])}</span>`).join('');
     this.modal(`<h2>👋 ${T('welcomeBack')}</h2><p>${T('offlineText', fmtTime(secs))}</p><div class="costs">${list}</div>
       <div class="modal-btns"><button class="btn primary" data-act="offline-x2">📺 ${T('collectX2')}</button><button class="btn" data-act="offline-collect">${T('collect')}</button></div>`);
   },
@@ -764,7 +855,7 @@ const UI = {
     const g = this._offline;
     if (!g) return;
     this._offline = null;
-    for (const k in g) addInv(k, Math.floor(g[k] * mult));
+    for (const k in g) { if (k === 'credits') earn(Math.floor(g[k] * mult)); else addInv(k, Math.floor(g[k] * mult)); }
     Sound.sfx.collect();
     this.closeModal();
   },

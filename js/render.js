@@ -467,6 +467,7 @@ const R = {
       case 'uploader': return this.drawUploader(ctx, e, px, py, t);
       case 'radar': return this.drawRadar(ctx, px, py, s, t, working);
       case 'sink': return this.drawSink(ctx, e, px, py, s, t);
+      case 'market': return this.drawTradePort(ctx, e, px, py, s, t);
       case 'gen': return this.drawGen(ctx, e, px, py, s, t, working);
     }
     // generic machine
@@ -795,6 +796,36 @@ const R = {
     ctx.fillStyle = '#d9dde2'; ctx.beginPath(); ctx.ellipse(0, 0, s * 0.38, s * 0.16, 0, 0, 7); ctx.fill();
     ctx.fillStyle = '#ff9a3c'; ctx.fillRect(-2, -2, s * 0.38, 4);
     ctx.restore();
+  },
+
+  // Trade Port: loading dock with cargo crates and a spinning credit coin
+  drawTradePort(ctx, e, px, py, s, t) {
+    const cx = px + s / 2, cy = py + s / 2;
+    ctx.fillStyle = '#3a414c'; Icons.rr(ctx, px + 2, py + 2, s - 4, s - 4, 8); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(px + 2, py + 2, s - 4, 5);
+    // dock floor stripes
+    ctx.fillStyle = '#2a2f37'; ctx.fillRect(px + 8, py + s - 24, s - 16, 16);
+    for (let k = 0; k < 5; k++) { ctx.fillStyle = k % 2 ? '#1b1f25' : '#ffcf3c'; ctx.fillRect(px + 10 + k * ((s - 20) / 5), py + s - 12, (s - 20) / 5, 3); }
+    // crates
+    const crate = (x, y, col) => {
+      ctx.fillStyle = col; ctx.fillRect(x, y, 16, 14);
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, 16, 14);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 16, y + 14); ctx.stroke();
+    };
+    crate(px + 10, py + s - 38, '#b5793f');
+    crate(px + 28, py + s - 38, '#4fb3ff');
+    crate(px + 19, py + s - 52, '#5ad17a');
+    // spinning coin
+    const w = Math.abs(Math.cos(t * 2.5));
+    ctx.save(); ctx.translate(px + s - 26, py + 30);
+    ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.ellipse(0, 0, 14 * w + 1.5, 14, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.ellipse(0, 0, 11 * w + 1, 11, 0, 0, 7); ctx.fill();
+    if (w > 0.35) { ctx.fillStyle = '#8a5a00'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.save(); ctx.scale(w, 1); ctx.fillText('$', 0, 1); ctx.restore(); }
+    ctx.restore();
+    if (e.flash) {
+      ctx.fillStyle = `rgba(255,210,63,${e.flash * 0.5})`;
+      ctx.beginPath(); ctx.arc(cx, cy, s * 0.45, 0, 7); ctx.fill();
+    }
   },
 
   drawSink(ctx, e, px, py, s, t) {

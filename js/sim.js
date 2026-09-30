@@ -17,6 +17,7 @@ const G = {
   shards: 0, hardDrives: 0, mamChoice: null, coupons: 0, points: 0, pointsTotal: 0, couponsPrinted: 0,
   slugsTaken: new Set(), crashesOpened: new Set(), treesCut: new Set(),
   tracked: null, tutorial: 0, ach: new Set(), won: false,
+  credits: 0, creditsTotal: 0, demand: {}, orders: [], hot: null, ordersDone: 0, itemsSold: 0,
   // runtime
   time: 0, playTime: 0, power: { cap: 15, demand: 0, factor: 1, load: 0 },
   stats: { delivered: {}, win: {}, flow: {}, winT: 0, slugs: 0 },
@@ -439,6 +440,8 @@ function accept(e, item, d) {
     case 'hub':
     case 'elevator':
       deliver(item); e.flash = 1; return true;
+    case 'market':
+      sellItems(item, 1, true); e.flash = 1; return true;
     case 'sink':
       sinkItem(item); e.flash = 1; return true;
     case 'machine': {
@@ -460,7 +463,7 @@ function accept(e, item, d) {
   return false;
 }
 
-const OUT_TARGET = { belt: 1, splitter: 1, junction: 1, uploader: 1, hub: 1, sink: 1, elevator: 1 };
+const OUT_TARGET = { belt: 1, splitter: 1, junction: 1, uploader: 1, hub: 1, sink: 1, elevator: 1, market: 1 };
 
 // Producer pushes one item out through its perimeter. getItem() returns item id or null.
 function pushOut(e, takeItem) {
@@ -502,7 +505,7 @@ function simTick(dt) {
       }
       if (e.hasFuel) cap += d.gen;
     } else if (d.power) {
-      if (e.kind === 'radar' || e.kind === 'sink') { e.active = true; demand += d.power; }
+      if (e.kind === 'radar' || e.kind === 'sink' || e.kind === 'market') { e.active = true; demand += d.power; }
       else if (e.active) demand += d.power * clockPow(e.clock || 1);
     }
   }
@@ -528,6 +531,8 @@ function simTick(dt) {
     else if (e.kind === 'junction') tickJunction(e);
   }
 
+  tickMarket(dt);
+
   // --- Flow statistics (10s windows) ---
   G.stats.winT += dt;
   if (G.stats.winT >= 10) {
@@ -539,6 +544,8 @@ function simTick(dt) {
       if (f[k] < 0.05) delete f[k];
     }
     G.stats.sinkRate = (G.stats.sinkRate || 0) * 0.6 + (G.stats.sinkWin || 0) * 6 * 0.4;
+    G.stats.creditRate = (G.stats.creditRate || 0) * 0.6 + (G.stats.creditWin || 0) * 6 * 0.4;
+    G.stats.creditWin = 0;
     G.stats.win = {}; G.stats.sinkWin = 0;
     G.stats.winT = 0;
   }
@@ -671,6 +678,104 @@ function tickJunction(e) {
     if (!it) continue;
     const t = entAt(e.x + DX[d], e.y + DY[d]);
     if (t && accept(t, it, d)) e.slots[d] = null;
+  }
+}
+
+// ---------- Market ----------
+// Items the player can currently make (or mine for an unlocked recipe): these are sold, bought and ordered.
+function marketItems() {
+  const out = new Set();
+  for (const id in RECIPES) {
+    const r = RECIPES[id];
+    if (r.alt ? !G.alts.has(id) : !G.unlockedR.has(id)) continue;
+    for (const k in r.out) out.add(k);
+    for (const k in r.in) if (NODE_TYPES[k]) out.add(k);
+  }
+  out.delete('leaves'); out.delete('wood');
+  return [...out];
+}
+function demandOf(k) { return G.demand[k] == null ? 1 : G.demand[k]; }
+function sellPrice(k) {
+  const hot = G.hot && G.hot.item === k ? MARKET.hotMult : 1;
+  return Math.max(1, Math.round(ITEMS[k].value * demandOf(k) * hot));
+}
+function buyPrice(k) { return Math.max(3, Math.ceil(ITEMS[k].value * MARKET.buyMult)); }
+// how many units it takes to push demand down noticeably (cheap bulk goods saturate slower)
+function saturation(k) { return Math.max(20, 2000 / Math.sqrt(ITEMS[k].value)); }
+
+function earn(c) {
+  G.credits += c; G.creditsTotal += c;
+  G.stats.creditWin = (G.stats.creditWin || 0) + c;
+}
+
+// Sells n units; fromBelt means they come from a Trade Port instead of storage.
+function sellItems(k, n, fromBelt) {
+  if (!ITEMS[k] || n <= 0) return 0;
+  if (!fromBelt) { n = Math.min(n, Math.floor(G.inv[k] || 0)); if (n <= 0) return 0; G.inv[k] -= n; }
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    total += sellPrice(k);
+    G.demand[k] = Math.max(0.4, demandOf(k) - 0.5 / saturation(k));
+  }
+  earn(total);
+  G.itemsSold += n;
+  if (!G.ach.has('first_sale')) unlockAch('first_sale');
+  return total;
+}
+
+function buyItems(k, n) {
+  const cost = buyPrice(k) * n;
+  if (G.credits < cost) { emit('error', { key: 'notEnoughCredits' }); return false; }
+  G.credits -= cost;
+  addInv(k, n);
+  return true;
+}
+
+function newOrder() {
+  const items = marketItems().filter(k => !G.orders.some(o => o && o.item === k));
+  if (!items.length) return null;
+  // favour more advanced parts
+  let sum = 0;
+  const w = items.map(k => { const v = Math.sqrt(ITEMS[k].value); sum += v; return v; });
+  let r = Math.random() * sum, k = items[0];
+  for (let i = 0; i < items.length; i++) { r -= w[i]; if (r <= 0) { k = items[i]; break; } }
+  let qty = Math.max(3, Math.round(300 / Math.sqrt(ITEMS[k].value)));
+  if (qty > 20) qty = Math.round(qty / 5) * 5;
+  const reward = Math.round(qty * ITEMS[k].value * MARKET.orderMult + 50);
+  return { item: k, qty, reward, who: (Math.random() * CUSTOMERS.length) | 0, coupon: Math.random() < 0.25 };
+}
+function ensureOrders() {
+  while (G.orders.length < MARKET.orderSlots) G.orders.push(null);
+  for (let i = 0; i < MARKET.orderSlots; i++) if (!G.orders[i] || !ITEMS[G.orders[i].item]) G.orders[i] = newOrder();
+}
+function fulfillOrder(i) {
+  const o = G.orders[i];
+  if (!o || (G.inv[o.item] || 0) < o.qty) { emit('error', { key: 'notEnough' }); return false; }
+  G.inv[o.item] -= o.qty;
+  earn(o.reward);
+  if (o.coupon) G.coupons++;
+  G.ordersDone++;
+  emit('order', { reward: o.reward, coupon: o.coupon });
+  G.orders[i] = newOrder();
+  if (G.ordersDone >= 10) unlockAch('orders_10');
+  return true;
+}
+function skipOrder(i) {
+  const now = Date.now() / 1000;
+  if ((G.cooldowns.skip || 0) > now) return false;
+  G.orders[i] = newOrder();
+  G.cooldowns.skip = now + MARKET.skipCooldown;
+  return true;
+}
+
+function tickMarket(dt) {
+  for (const k in G.demand) {
+    G.demand[k] += (1 - G.demand[k]) * Math.min(1, dt / MARKET.recover * 3);
+    if (G.demand[k] > 0.999) delete G.demand[k];
+  }
+  if (!G.hot || G.time >= G.hot.until) {
+    const pool = marketItems().filter(k => ITEMS[k].value >= 6);
+    if (pool.length) G.hot = { item: pool[(Math.random() * pool.length) | 0], until: G.time + MARKET.hotEvery };
   }
 }
 
@@ -850,6 +955,7 @@ function checkAchievements() {
   if ((G.stats.slugs || 0) >= 10) unlockAch('slugs_10');
   if (G.power.cap >= 500) unlockAch('power_500');
   if (G.pointsTotal >= 100000) unlockAch('sink_100k');
+  if (G.creditsTotal >= 1e6) unlockAch('credits_1m');
   const dl = G.stats.delivered;
   if ((dl.television || 0) >= 1) unlockAch('first_tv');
   if ((dl.smartphone || 0) >= 1) unlockAch('first_phone');
@@ -920,10 +1026,11 @@ function serialize() {
   return JSON.stringify({
     v: 1, t: Date.now(), seed: G.seed, pt: Math.round(G.playTime),
     inv: G.inv, ub: [...G.unlockedB], ur: [...G.unlockedR], ms: [...G.milestones], ph: G.phase, alts: [...G.alts],
+    cr$: G.credits, crt: G.creditsTotal, dem: G.demand, ord: G.orders, hot: G.hot, od: G.ordersDone, sold: G.itemsSold,
     sh: G.shards, hd: G.hardDrives, mc: G.mamChoice, cp: G.coupons, pts: G.points, ptt: G.pointsTotal, cpp: G.couponsPrinted,
     sl: [...G.slugsTaken], cr: [...G.crashesOpened], tc: [...G.treesCut],
     tr: G.tracked, tu: G.tutorial, ach: [...G.ach], won: G.won,
-    st: { d: G.stats.delivered, f: G.stats.flow, s: G.stats.slugs, sr: G.stats.sinkRate || 0 },
+    st: { d: G.stats.delivered, f: G.stats.flow, s: G.stats.slugs, sr: G.stats.sinkRate || 0, cr: G.stats.creditRate || 0 },
     rev: rle(G.revealed), ents, cd: G.cooldowns,
     lang: I18N.lang, mute: Sound.muted,
   });
@@ -942,12 +1049,17 @@ function deserialize(json) {
   G.treesCut = new Set(s.tc || []);
   G.treesCut.forEach(i => { G.trees[i] = 0; });
   G.tracked = s.tr || null; G.tutorial = s.tu || 0; G.ach = new Set(s.ach || []); G.won = !!s.won;
+  G.credits = s['cr$'] || 0; G.creditsTotal = s.crt || 0; G.demand = s.dem || {}; G.orders = (s.ord || []).filter(o => !o || ITEMS[o.item]);
+  G.hot = s.hot && ITEMS[s.hot.item] ? s.hot : null; G.ordersDone = s.od || 0; G.itemsSold = s.sold || 0;
+  // re-apply unlocks of completed milestones (picks up buildings/recipes added in later versions)
+  for (const m of MILESTONES) if (G.milestones.has(m.id)) { m.b.forEach(b => G.unlockedB.add(b)); m.r.forEach(r => G.unlockedR.add(r)); }
   G.playTime = s.pt || 0;
   G.cooldowns = s.cd || {};
   if (s.st) { G.stats.delivered = s.st.d || {}; G.stats.flow = s.st.f || {}; G.stats.slugs = s.st.s || 0; G.stats.sinkRate = s.st.sr || 0; }
   // forget items that were removed from the game
   const known = (o) => { if (o) for (const k in o) if (!ITEMS[k]) delete o[k]; return o; };
-  known(G.inv); known(G.stats.delivered); known(G.stats.flow);
+  known(G.inv); known(G.stats.delivered); known(G.stats.flow); known(G.demand);
+  G.stats.creditRate = (s.st && s.st.cr) || 0;
   unrle(s.rev, G.revealed);
   for (const o of s.ents) {
     if (!BUILDINGS[o.t]) continue;

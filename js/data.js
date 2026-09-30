@@ -196,6 +196,8 @@ const BUILDINGS = {
     desc: n('Reveals a large area around it.', 'Çevresindeki geniş bir alanı açığa çıkarır.') },
   sink: { kind: 'sink', size: 3, power: 30, name: n('Resource Sink', 'Kaynak Havuzu'), cat: 'special', cost: { rip: 15, cable: 30, concrete: 45 }, reveal: 5,
     desc: n('Destroys any item for points. Points print Coupons.', 'Herhangi bir eşyayı puan karşılığı yok eder. Puanlar kupon basar.') },
+  trade_port: { kind: 'market', size: 3, power: 20, name: n('Trade Port', 'Ticaret Limanı'), cat: 'special', cost: { iron_plate: 50, iron_rod: 30, wire: 30 }, reveal: 5,
+    desc: n('Automatically sells everything belted into it for Credits at the current market price.', 'İçine bantlanan her şeyi güncel piyasa fiyatından otomatik olarak Krediye satar.') },
   space_elevator: { kind: 'elevator', size: 5, unique: true, name: n('Space Elevator', 'Uzay Asansörü'), cat: 'special', cost: { concrete: 100, iron_plate: 50, iron_rod: 100 }, reveal: 10,
     desc: n('Ship Project Parts to orbit to unlock new Tiers.', 'Yeni seviyeler açmak için Proje Parçalarını yörüngeye gönder.') },
 };
@@ -213,7 +215,7 @@ const TIER_NAMES = [n('Onboarding', 'Başlangıç'), n('Tier 1', 'Seviye 1'), n(
 const MILESTONES = [
   { id: 'm0_1', tier: 0, name: n('HUB Upgrade 1', 'HUB Yükseltme 1'), cost: { iron_rod: 10 }, b: ['biomass_burner'], r: ['biomass_leaves', 'biomass_wood'] },
   { id: 'm0_2', tier: 0, name: n('HUB Upgrade 2', 'HUB Yükseltme 2'), cost: { iron_plate: 20, iron_rod: 20 }, b: [], r: ['copper_ingot', 'wire', 'cable'] },
-  { id: 'm0_3', tier: 0, name: n('HUB Upgrade 3', 'HUB Yükseltme 3'), cost: { iron_plate: 50, wire: 40 }, b: ['splitter', 'uploader'], r: ['concrete', 'screw'] },
+  { id: 'm0_3', tier: 0, name: n('HUB Upgrade 3', 'HUB Yükseltme 3'), cost: { iron_plate: 50, wire: 40 }, b: ['splitter', 'uploader', 'trade_port'], r: ['concrete', 'screw'] },
   { id: 'm0_4', tier: 0, name: n('HUB Upgrade 4', 'HUB Yükseltme 4'), cost: { iron_plate: 75, cable: 30, concrete: 30 }, b: ['junction'], r: [], shards: 1 },
   { id: 'm1_logistics', tier: 1, name: n('Logistics Mk.2', 'Lojistik Mk.2'), cost: { screw: 150, iron_rod: 50 }, b: ['belt2'], r: [] },
   { id: 'm1_field', tier: 1, name: n('Field Research', 'Saha Araştırması'), cost: { wire: 80, concrete: 40 }, b: ['radar'], r: [], shards: 2 },
@@ -276,6 +278,9 @@ const ACHIEVEMENTS = [
   { id: 'first_tv', name: n('Prime Time', 'Prime Time'), desc: n('Deliver a Television', 'Bir Televizyon teslim et') },
   { id: 'first_phone', name: n('Hello, World!', 'Merhaba Dünya!'), desc: n('Deliver a Smartphone', 'Bir Akıllı Telefon teslim et') },
   { id: 'gadgets_100', name: n('Tech Giant', 'Teknoloji Devi'), desc: n('Deliver 100 consumer devices', '100 elektronik cihaz teslim et') },
+  { id: 'first_sale', name: n('Entrepreneur', 'Girişimci'), desc: n('Sell your first item', 'İlk eşyanı sat') },
+  { id: 'orders_10', name: n('Reliable Supplier', 'Güvenilir Tedarikçi'), desc: n('Complete 10 orders', '10 sipariş tamamla') },
+  { id: 'credits_1m', name: n('Millionaire', 'Milyoner'), desc: n('Earn 1,000,000 Credits in total', 'Toplam 1.000.000 Kredi kazan') },
   { id: 'machines_50', name: n('Industrialist', 'Sanayici'), desc: n('Have 50 production buildings', '50 üretim binan olsun') },
 ];
 
@@ -313,3 +318,22 @@ const HUB_MODULES = [
   { at: 20, name: n('Golden aura', 'Altın hale') },
 ];
 const HUB_MW_PER_LEVEL = 5;
+
+// ---------- Market ----------
+const MARKET = {
+  buyMult: 3,            // buying costs 3x the base value (no arbitrage with selling)
+  orderMult: 2.5,        // orders pay 2.5x the base value
+  recover: 300,          // seconds for demand to recover most of the way
+  hotEvery: 600,         // hot item rotates every 10 min (game time)
+  hotMult: 1.5,
+  orderSlots: 3,
+  skipCooldown: 60,
+  shardPrice: 3000,
+  drivePrice: 6000,
+};
+const CUSTOMERS = [
+  n('Mars Colony', 'Mars Kolonisi'), n('Orbital Hotel', 'Yörünge Oteli'), n('Captain Nova', 'Kaptan Nova'),
+  n('Lunar Mining Co.', 'Ay Madencilik A.Ş.'), n('Deep Space Lab', 'Derin Uzay Laboratuvarı'), n('Asteroid Outpost', 'Asteroit Karakolu'),
+  n('Stellar Electronics', 'Yıldız Elektronik'), n('Comet Couriers', 'Kuyruklu Yıldız Kargo'), n('Titan Shipyard', 'Titan Tersanesi'),
+  n('Galactic Mall', 'Galaktik AVM'),
+];

@@ -248,6 +248,7 @@ const Input = {
       case 'i': case 'Tab': ev.preventDefault(); UI.action('open', 'inv'); break;
       case 'm': UI.action('open', 'mam'); break;
       case 'k': UI.action('open', 'shop'); break;
+      case 'b': UI.action('open', 'market'); break;
       case 'j': UI.action('open', 'ach'); break;
       default:
         if (/^[1-9]$/.test(k)) {
