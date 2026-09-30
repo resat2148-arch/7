@@ -221,6 +221,111 @@ function deconstruct(e, quiet) {
   return true;
 }
 
+// ---------- Belt routing ----------
+// Finds a belt route from tile a to tile b that avoids buildings, rocks, water and fog,
+// preferring few turns. Clicking a building as start/end uses its whole footprint.
+function routeBelt(a, b, rot) {
+  if (a.x === b.x && a.y === b.y) {
+    const ex = entAt(a.x, a.y);
+    return [{ x: a.x, y: a.y, dir: ex && ex.kind === 'belt' ? ex.dir : rot }];
+  }
+  const tilesOf = (t) => {
+    const e = entAt(t.x, t.y);
+    return e && e.kind !== 'belt' ? footprint(e.type, e.x, e.y) : [[t.x, t.y]];
+  };
+  const starts = tilesOf(a), goals = tilesOf(b);
+  const startEnt = entAt(a.x, a.y);
+  const pad = 14;
+  const x0 = Math.max(0, Math.min(a.x, b.x) - pad), y0 = Math.max(0, Math.min(a.y, b.y) - pad);
+  const x1 = Math.min(G.W - 1, Math.max(a.x, b.x) + pad), y1 = Math.min(G.H - 1, Math.max(a.y, b.y) + pad);
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+  const N = bw * bh * 4;
+  const dist = new Float32Array(N).fill(Infinity);
+  const prev = new Int32Array(N).fill(-1);
+  const isGoal = new Uint8Array(bw * bh);
+  for (const [gx, gy] of goals) if (gx >= x0 && gx <= x1 && gy >= y0 && gy <= y1) isGoal[(gy - y0) * bw + gx - x0] = 1;
+  // binary heap of [cost, state]
+  const hc = [], hs = [];
+  const push = (c, st) => {
+    let i = hc.length; hc.push(c); hs.push(st);
+    while (i > 0) { const p = (i - 1) >> 1; if (hc[p] <= hc[i]) break; [hc[p], hc[i]] = [hc[i], hc[p]]; [hs[p], hs[i]] = [hs[i], hs[p]]; i = p; }
+  };
+  const pop = () => {
+    const c = hc[0], st = hs[0];
+    const lc = hc.pop(), ls = hs.pop();
+    if (hc.length) {
+      hc[0] = lc; hs[0] = ls;
+      let i = 0;
+      for (;;) {
+        const l = i * 2 + 1, r = l + 1; let m = i;
+        if (l < hc.length && hc[l] < hc[m]) m = l;
+        if (r < hc.length && hc[r] < hc[m]) m = r;
+        if (m === i) break;
+        [hc[m], hc[i]] = [hc[i], hc[m]]; [hs[m], hs[i]] = [hs[i], hs[m]]; i = m;
+      }
+    }
+    return [c, st];
+  };
+  const passable = (x, y, d) => {
+    const i = idx(x, y);
+    if (!G.revealed[i]) return false;
+    const t = G.terr[i];
+    if (t === TERR.WATER || t === TERR.ROCK) return false;
+    if (G.crashAt[i] >= 0 && !G.crashesOpened.has(G.crashAt[i])) return false;
+    const o = G.occ[i];
+    if (!o) return true;
+    const e = G.ents.get(o);
+    return e.kind === 'belt' && e.dir === d; // may run along (and upgrade) a belt going the same way
+  };
+  for (const [sx, sy] of starts) {
+    if (sx < x0 || sx > x1 || sy < y0 || sy > y1) continue;
+    for (let d = 0; d < 4; d++) { const st = ((sy - y0) * bw + sx - x0) * 4 + d; dist[st] = 0; push(0, st); }
+  }
+  let found = -1;
+  while (hc.length) {
+    const [c, st] = pop();
+    if (c > dist[st]) continue;
+    const cell = st >> 2, d = st & 3;
+    const cx = x0 + cell % bw, cy = y0 + ((cell / bw) | 0);
+    if (isGoal[cell] && c > 0) { found = st; break; }
+    for (let nd = 0; nd < 4; nd++) {
+      if (nd === (d + 2) % 4 && c > 0) continue;
+      const nx = cx + DX[nd], ny = cy + DY[nd];
+      if (nx < x0 || nx > x1 || ny < y0 || ny > y1) continue;
+      const ncell = (ny - y0) * bw + nx - x0;
+      const ent2 = entAt(nx, ny);
+      const inStart = startEnt && startEnt.kind !== 'belt' && ent2 === startEnt;
+      if (inStart) continue;
+      if (!isGoal[ncell] && !passable(nx, ny, nd)) continue;
+      const nc = c + 10 + (nd !== d && c > 0 ? 4 : 0);
+      const ns = ncell * 4 + nd;
+      if (nc < dist[ns]) { dist[ns] = nc; prev[ns] = st; push(nc, ns); }
+    }
+  }
+  if (found < 0) {
+    // no route: straight L-shaped preview (shown red where blocked)
+    const out = [];
+    let x = a.x, y = a.y;
+    while (x !== b.x || y !== b.y) {
+      const d = x !== b.x ? (b.x > x ? 0 : 2) : (b.y > y ? 1 : 3);
+      out.push({ x, y, dir: d });
+      x += DX[d]; y += DY[d];
+    }
+    out.push({ x, y, dir: out[out.length - 1].dir });
+    return out;
+  }
+  const cells = [];
+  for (let st = found; st >= 0; st = prev[st]) cells.push(st);
+  cells.reverse();
+  const out = cells.map(st => {
+    const cell = st >> 2;
+    return { x: x0 + cell % bw, y: y0 + ((cell / bw) | 0), dir: st & 3 };
+  });
+  // each tile points to the next one; the last keeps the direction it was entered with
+  for (let k = 0; k < out.length - 1; k++) out[k].dir = out[k + 1].dir;
+  return out;
+}
+
 // ---------- Fog of war ----------
 function reveal(cx, cy, r) {
   const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(G.W - 1, Math.ceil(cx + r));
@@ -284,13 +389,31 @@ function sinkItem(item) {
 }
 function couponCost() { return Math.round(1000 * (1 + G.couponsPrinted * 0.35)); }
 
+// A belt bends when nothing feeds it from behind and exactly one belt feeds it from a side.
+// Returns that world side, or -1 for a straight belt.
+function beltCurve(e) {
+  const back = (e.dir + 2) % 4;
+  const b = entAt(e.x + DX[back], e.y + DY[back]);
+  if (b && (b.kind !== 'belt' || b.dir === e.dir)) return -1;
+  let side = -1;
+  for (const s of [(e.dir + 1) % 4, (e.dir + 3) % 4]) {
+    const nb = entAt(e.x + DX[s], e.y + DY[s]);
+    if (nb && nb.kind === 'belt' && nb.dir === (s + 2) % 4) {
+      if (side >= 0) return -1;
+      side = s;
+    }
+  }
+  return side;
+}
+
 // Attempt to insert an item into entity e travelling in direction d.
 function accept(e, item, d) {
   switch (e.kind) {
     case 'belt': {
       if (d === (e.dir + 2) % 4) return false;
       const items = e.items;
-      const p = d === e.dir ? 0 : 0.5;
+      // straight entry, or the feeding side of a curve, starts at the belt's beginning
+      const p = d === e.dir || beltCurve(e) === (d + 2) % 4 ? 0 : 0.5;
       // find insertion index (items sorted by p descending)
       let k = items.length;
       while (k > 0 && items[k - 1].p < p) k--;
@@ -737,6 +860,9 @@ function tutorialCheck() {
     case 'constructor': done = all.some(e => e.type === 'constructor' && ((e.inb.iron_ingot || 0) > 0 || e.made > 0 || e.crafting)); break;
     case 'hub': done = (G.stats.delivered.iron_plate || 0) > 0 || (G.stats.delivered.iron_rod || 0) > 0; break;
     case 'milestone': done = G.milestones.has('m0_1'); break;
+    case 'rods': done = (G.stats.delivered.iron_rod || 0) > 0 || G.milestones.has('m0_2'); break;
+    case 'hub2': done = G.milestones.has('m0_2'); break;
+    case 'power': done = all.some(e => e.kind === 'gen' && (e.burn > 0 || Object.values(e.fuel || {}).some(v => v > 0))); break;
   }
   if (done) {
     G.tutorial++;

@@ -124,8 +124,8 @@ function recipeMainOut(id) { return Object.keys(RECIPES[id].out)[0]; }
 
 // Buildings. kind drives simulation behavior. size = square side in tiles.
 const BUILDINGS = {
-  hub: { kind: 'hub', size: 4, name: n('The HUB', 'HUB'), cat: null, cost: {}, gen: 15, reveal: 16, color: '#ff9a3c',
-    desc: n('Your landing base. Items belted in go to Central Storage. Provides 15 MW.', 'İniş üssün. Bantla gelen eşyalar Merkez Depoya gider. 15 MW sağlar.') },
+  hub: { kind: 'hub', size: 4, name: n('The HUB', 'HUB'), cat: null, cost: {}, gen: 30, reveal: 16, color: '#ff9a3c',
+    desc: n('Your landing base. Items belted in go to Central Storage. Provides 30 MW.', 'İniş üssün. Bantla gelen eşyalar Merkez Depoya gider. 30 MW sağlar.') },
   belt1: { kind: 'belt', size: 1, tier: 1, speed: 1, name: n('Conveyor Belt Mk.1', 'Konveyör Bandı Mk.1'), cat: 'logistics', cost: { iron_plate: 1 }, reveal: 4,
     desc: n('Moves 120 items/min. Drag to draw.', 'Dakikada 120 eşya taşır. Çizmek için sürükle.') },
   belt2: { kind: 'belt', size: 1, tier: 2, speed: 2, name: n('Conveyor Belt Mk.2', 'Konveyör Bandı Mk.2'), cat: 'logistics', cost: { iron_plate: 1, screw: 2 }, reveal: 4,
@@ -250,10 +250,13 @@ const ACHIEVEMENTS = [
 ];
 
 const TUTORIAL = [
-  { id: 'miner', text: n('Select <b>Miner Mk.1</b> (bottom bar) and place it on an <b>Iron Ore</b> node.', '<b>Madenci Mk.1</b>\'i seç (alt çubuk) ve bir <b>Demir Cevheri</b> düğümüne yerleştir.') },
+  { id: 'miner', text: n('Select <b>Miner Mk.1</b> (Production tab, bottom bar) and place it on an <b>Iron Ore</b> node.', '<b>Madenci Mk.1</b>\'i seç (alt çubuk, Üretim sekmesi) ve bir <b>Demir Cevheri</b> düğümüne yerleştir.') },
   { id: 'smelter', text: n('Place a <b>Smelter</b> a few tiles away from the miner.', 'Madenciden birkaç kare uzağa bir <b>Eritici</b> yerleştir.') },
-  { id: 'belt', text: n('Select <b>Conveyor Belt</b> and <b>drag</b> from the Miner to the Smelter.', '<b>Konveyör Bandı</b>\'nı seç ve Madenciden Eriticiye <b>sürükle</b>.') },
-  { id: 'constructor', text: n('Place a <b>Constructor</b> and belt the <b>Iron Ingots</b> into it. It makes Iron Plates.', 'Bir <b>Yapıcı</b> yerleştir ve <b>Demir Külçeleri</b> ona bantla. Demir Levha üretir.') },
-  { id: 'hub', text: n('Belt the <b>Iron Plates</b> into the <b>HUB</b> (big orange building).', '<b>Demir Levhaları</b> <b>HUB</b>\'a (büyük turuncu bina) bantla.') },
-  { id: 'milestone', text: n('Open the <b>HUB</b> (H or the button on the right) and complete <b>HUB Upgrade 1</b>. Tip: click a Constructor to change its recipe.', '<b>HUB</b>\'ı aç (H veya sağdaki düğme) ve <b>HUB Yükseltme 1</b>\'i tamamla. İpucu: tarifini değiştirmek için Yapıcıya tıkla.') },
+  { id: 'belt', text: n('Select <b>Conveyor Belt</b>, click the <b>Miner</b>, then click the <b>Smelter</b>. The belt is laid in one piece.', '<b>Konveyör Bandı</b>\'nı seç, önce <b>Madenci</b>\'ye, sonra <b>Eritici</b>\'ye tıkla. Bant tek parça döşenir.') },
+  { id: 'constructor', text: n('Place a <b>Constructor</b> and belt the Smelter into it (click Smelter, then Constructor). It makes <b>Iron Plates</b>.', 'Bir <b>Yapıcı</b> yerleştir ve Eriticiyi ona bantla (önce Eritici, sonra Yapıcı). <b>Demir Levha</b> üretir.') },
+  { id: 'hub', text: n('Belt the Constructor into the <b>HUB</b> (big orange building). Everything that reaches the HUB goes to your storage.', 'Yapıcıyı <b>HUB</b>\'a (büyük turuncu bina) bantla. HUB\'a ulaşan her şey depona girer.') },
+  { id: 'milestone', ms: 'm0_1', text: n('Complete <b>HUB Upgrade 1</b>: press <b>Complete</b> below when the bar is full.', '<b>HUB Yükseltme 1</b>\'i tamamla: çubuk dolunca aşağıdaki <b>Tamamla</b>\'ya bas.') },
+  { id: 'rods', ms: 'm0_2', text: n('HUB Upgrade 2 needs <b>Iron Rods</b>. Build a second <b>Miner → Smelter → Constructor</b> line, then <b>click the new Constructor</b> and pick the <b>Iron Rod</b> recipe. Belt it into the HUB.', 'HUB Yükseltme 2 için <b>Demir Çubuk</b> gerekiyor. İkinci bir <b>Madenci → Eritici → Yapıcı</b> hattı kur, sonra <b>yeni Yapıcıya tıkla</b> ve <b>Demir Çubuk</b> tarifini seç. HUB\'a bantla.') },
+  { id: 'hub2', ms: 'm0_2', text: n('Collect 20 Iron Plates and 20 Iron Rods, then press <b>Complete</b> below to finish <b>HUB Upgrade 2</b>.', '20 Demir Levha ve 20 Demir Çubuk topla, sonra <b>HUB Yükseltme 2</b>\'yi bitirmek için aşağıdaki <b>Tamamla</b>\'ya bas.') },
+  { id: 'power', text: n('More machines need more power. Place a <b>Biomass Burner</b> (Power tab), click it and press <b>+ Fuel</b>. Click trees to collect Leaves and Wood.', 'Daha çok makine daha çok güç ister. Bir <b>Biyokütle Yakıcı</b> yerleştir (Güç sekmesi), ona tıkla ve <b>+ Yakıt</b>\'a bas. Yaprak ve Odun için ağaçlara tıkla.') },
 ];

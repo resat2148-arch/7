@@ -61,6 +61,7 @@ kbd { font-size: 10px; background: #0006; border-radius: 3px; padding: 0 4px; ma
 .gbar span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; text-shadow: 0 1px 2px #000; }
 .gbar.thin { height: 5px; margin: 6px 0; flex: none; }
 .rate { color: var(--good); font-size: 11px; font-weight: 700; min-width: 54px; text-align: right; }
+.hint { font-size: 11.5px; line-height: 1.35; color: var(--text); background: #ffd23f14; border-left: 2px solid #ffd23f; border-radius: 4px; padding: 3px 6px; margin: 2px 0 6px 26px; }
 .tip { margin-top: 8px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 6px; line-height: 1.35; }
 #goal .btn { width: 100%; margin-top: 6px; }
 

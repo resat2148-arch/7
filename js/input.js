@@ -55,8 +55,6 @@ const Input = {
     const d = UI.tool && UI.tool !== 'decon' ? BUILDINGS[UI.tool] : null;
     if (d && d.kind === 'belt') {
       this.down = Object.assign(base, { mode: 'belt' });
-      const ex = entAt(tile.x, tile.y);
-      UI.beltPath = [{ x: tile.x, y: tile.y, dir: ex && ex.kind === 'belt' ? ex.dir : UI.rot }];
     } else if (UI.tool === 'decon') {
       this.down = Object.assign(base, { mode: 'decon' });
       this.deconAt(tile);
@@ -89,18 +87,19 @@ const Input = {
     const dn = this.down;
     if (dn) {
       if (Math.hypot(ev.clientX - dn.sx, ev.clientY - dn.sy) > 6) dn.moved = true;
-      if (dn.mode === 'pan' || (dn.mode === 'maybe' && dn.moved)) {
+      if (dn.mode === 'pan' || (dn.mode === 'maybe' && dn.moved) || (dn.mode === 'belt' && dn.moved && UI.beltStart)) {
         R.cam.x = dn.camx - (ev.clientX - dn.sx) / R.cam.z;
         R.cam.y = dn.camy - (ev.clientY - dn.sy) / R.cam.z;
         this.clampCam();
         UI.hideTip();
       } else if (dn.mode === 'belt') {
-        this.extendPath(tile);
+        if (dn.moved && !UI.beltStart) this.updateRoute(dn.tile, tile);
       } else if (dn.mode === 'decon') {
         if (tile.x !== dn.last.x || tile.y !== dn.last.y) { this.deconAt(tile); dn.last = tile; }
       }
       return;
     }
+    if (UI.beltStart) this.updateRoute(UI.beltStart, tile);
     if (!UI.tool && overCanvas) UI.showWorldTip(UI.worldTip(tile), ev.clientX, ev.clientY);
     else UI.hideTip();
   },
@@ -114,50 +113,52 @@ const Input = {
     }
     const dn = this.down;
     this.down = null;
-    if (!dn || cancel) { UI.beltPath = null; return; }
-    if (dn.mode === 'belt') this.commitBelt();
+    if (!dn || cancel) { UI.beltPath = null; UI.beltStart = null; return; }
+    if (dn.mode === 'belt') this.beltClick(dn, R.screenToTile(ev.clientX, ev.clientY));
     else if (dn.mode === 'maybe' && !dn.moved) this.click(dn.tile);
     else if (dn.mode === 'pan' && dn.button === 2 && !dn.moved) {
-      if (UI.tool) UI.selectTool(null);
+      if (UI.beltStart) { UI.beltStart = null; UI.beltPath = null; }
+      else if (UI.tool) UI.selectTool(null);
       else if (UI.selected) { UI.selected = null; UI.renderInspect(true); }
     }
   },
 
-  extendPath(tile) {
-    const path = UI.beltPath;
-    if (!path) return;
-    let last = path[path.length - 1];
-    if (last.x === tile.x && last.y === tile.y) return;
-    if (path.length >= 2) {
-      const prev = path[path.length - 2];
-      if (prev.x === tile.x && prev.y === tile.y) { path.pop(); return; }
+  // Belt tool: click the start, click the end (or drag). The belt is routed around obstacles.
+  beltClick(dn, tile) {
+    if (dn.moved && !UI.beltStart) {
+      this.commitBelt(routeBelt(dn.tile, tile, UI.rot));
+      return;
     }
-    let guard = 0;
-    while ((last.x !== tile.x || last.y !== tile.y) && guard++ < 200) {
-      const ddx = tile.x - last.x, ddy = tile.y - last.y;
-      const moveX = Math.abs(ddx) >= Math.abs(ddy);
-      const sx = moveX ? Math.sign(ddx) : 0, sy = moveX ? 0 : Math.sign(ddy);
-      const d = sx === 1 ? 0 : sy === 1 ? 1 : sx === -1 ? 2 : 3;
-      const nx = last.x + sx, ny = last.y + sy;
-      if (path.some(p => p.x === nx && p.y === ny)) break;
-      last.dir = d;
-      const next = { x: nx, y: ny, dir: d };
-      path.push(next);
-      last = next;
-      Sound.sfx.belt();
+    if (dn.moved) return; // panned while choosing the end point
+    if (!UI.beltStart) {
+      UI.beltStart = dn.tile;
+      this.updateRoute(dn.tile, dn.tile, true);
+      Sound.sfx.click();
+      return;
     }
+    const path = routeBelt(UI.beltStart, dn.tile, UI.rot);
+    UI.beltStart = null;
+    this.commitBelt(path);
   },
 
-  commitBelt() {
-    const path = UI.beltPath;
+  updateRoute(a, b, force) {
+    const key = a.x + ',' + a.y + '>' + b.x + ',' + b.y + ':' + UI.rot;
+    if (!force && key === this._routeKey) return;
+    this._routeKey = key;
+    UI.beltPath = routeBelt(a, b, UI.rot);
+    Sound.sfx.belt();
+  },
+
+  commitBelt(path) {
     UI.beltPath = null;
+    this._routeKey = null;
     if (!path) return;
     let placed = 0, poor = false, lastErr = null;
     for (let k = 0; k < path.length; k++) {
       const p = path[k];
       const ex = entAt(p.x, p.y);
       if (ex && ex.kind !== 'belt') continue;
-      // ending a drag on an existing belt merges into it: keep its direction
+      // ending on an existing belt merges into it: keep its direction
       if (ex && k === path.length - 1 && path.length > 1) continue;
       if (!ex) {
         const err = checkPlace(UI.tool, p.x, p.y);
@@ -227,7 +228,7 @@ const Input = {
       case 'x': UI.selectTool(UI.tool === 'decon' ? null : 'decon'); break;
       case 'Delete': { const e = ent(UI.selected); if (e && deconstruct(e)) { UI.selected = null; UI.renderInspect(true); } break; }
       case 'Escape':
-        if (UI.beltPath) UI.beltPath = null;
+        if (UI.beltPath || UI.beltStart) { UI.beltPath = null; UI.beltStart = null; }
         else if ($('#modal').classList.contains('show')) UI.closeModal();
         else if (UI.tool) UI.selectTool(null);
         else if (UI.panel) UI.openPanel(null);

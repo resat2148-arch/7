@@ -144,6 +144,15 @@ const STR = {
   alt: { en: 'ALT', tr: 'ALT' },
   inStorage: { en: 'In storage', tr: 'Depoda' },
   hubDesc: { en: 'Everything belted into the HUB goes to Central Storage. Use it to build and complete milestones.', tr: 'HUB\'a bantla gelen her şey Merkez Depoya gider. İnşa etmek ve kilometre taşlarını tamamlamak için kullan.' },
+  beltHint: { en: 'Click where the belt starts, then click where it ends. It is built in one piece around obstacles.', tr: 'Bandın başlayacağı yere, sonra biteceği yere tıkla. Engellerin etrafından tek parça döşenir.' },
+  beltEnd: { en: 'Click the end point', tr: 'Bitiş noktasına tıkla' },
+  howTo: { en: 'How to get it', tr: 'Nasıl elde edilir' },
+  hint_mine: { en: 'Place a Miner on a {0} node', tr: '{0} düğümüne Madenci koy' },
+  hint_tree: { en: 'Click trees', tr: 'Ağaçlara tıkla' },
+  hint_recipe: { en: '{0}: choose the "{1}" recipe (needs {2})', tr: '{0}: "{1}" tarifini seç (girdi: {2})' },
+  hint_hand: { en: 'Hand-craft "{0}" in Storage (I) from {1}', tr: 'Depo (I) ekranında "{0}" elle üret ({1} gerekir)' },
+  hint_locked: { en: 'Not unlocked yet', tr: 'Henüz açılmadı' },
+  hint_belt: { en: 'then belt it into the HUB', tr: 'sonra HUB\'a bantla' },
   empty: { en: 'Empty', tr: 'Boş' },
   tips: {
     en: [

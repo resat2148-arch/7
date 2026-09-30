@@ -117,6 +117,7 @@ const UI = {
         break;
       case 'ms-track': G.tracked = G.tracked === arg ? null : arg; Sound.sfx.click(); this.renderPanel(true); this.renderGoal(true); break;
       case 'goal-complete': {
+        if (arg) { completeMilestone(arg); break; }
         const g = currentGoal();
         if (g && g.type === 'milestone') completeMilestone(g.m.id);
         else if (g && g.type === 'phase') { if (!elevatorBuilt()) this.toast(T('buildElevatorFirst'), 'bad'); else submitPhase(); }
@@ -202,6 +203,8 @@ const UI = {
     if (t && t !== 'decon' && this.tool === t) t = null;
     this.tool = t;
     this.beltPath = null;
+    this.beltStart = null;
+    if (t && BUILDINGS[t] && BUILDINGS[t].kind === 'belt' && (this.beltHints = (this.beltHints || 0) + 1) <= 3) this.toast('🛤 ' + T('beltHint'));
     if (t !== null && t !== this.copiedFor) this.copyRecipe = null;
     if (t) { this.selected = null; this.renderInspect(true); }
     Sound.sfx.click();
@@ -326,21 +329,21 @@ const UI = {
       const st = TUTORIAL[G.tutorial];
       html = `<div class="goal-head">🎯 ${T('goal')} <span class="muted">${G.tutorial + 1}/${TUTORIAL.length}</span><a class="skip" data-act="skip-tut">${T('skipTutorial')}</a></div>
         <div class="goal-text">${L(st.text)}</div>`;
+      const m = st.ms && MILESTONES.find(o => o.id === st.ms);
+      if (m && !G.milestones.has(m.id)) {
+        const g = this.goalRows(m.cost);
+        html += `<div class="goal-name small">${L(m.name)}</div>${g.rows}
+          <button class="btn ${g.all ? 'primary pulse' : ''}" data-act="goal-complete" data-arg="${m.id}" ${g.all ? '' : 'disabled'}>${T('complete')}</button>`;
+      }
     } else {
       const g = currentGoal();
       if (g) {
-        let all = true;
-        const rows = Object.keys(g.cost).map(k => {
-          const have = G.inv[k] || 0, need = g.cost[k];
-          if (have < need) all = false;
-          const f = Math.min(1, have / need);
-          const rate = G.stats.flow[k];
-          return `<div class="goal-row">${Icons.img(k)}<div class="gbar"><div style="width:${f * 100}%"></div><span>${fmt(Math.min(have, need))} / ${fmt(need)}</span></div><span class="rate">${rate ? '+' + fmt(rate) + T('perMin') : ''}</span></div>`;
-        }).join('');
+        const r = this.goalRows(g.cost);
         const blocked = g.type === 'phase' && !elevatorBuilt();
-        html = `<div class="goal-head">🎯 ${T('goal')}${G.tracked ? ' 📌' : ''}</div><div class="goal-name">${g.name}</div>${rows}
+        const ok = r.all && !blocked;
+        html = `<div class="goal-head">🎯 ${T('goal')}${G.tracked ? ' 📌' : ''}</div><div class="goal-name">${g.name}</div>${r.rows}
           ${blocked ? `<div class="muted small">${T('buildElevatorFirst')}</div>` : ''}
-          <button class="btn ${all && !blocked ? 'primary pulse' : ''}" data-act="goal-complete" ${all && !blocked ? '' : 'disabled'}>${T('complete')}</button>`;
+          <button class="btn ${ok ? 'primary pulse' : ''}" data-act="goal-complete" data-arg="${g.type === 'milestone' ? g.m.id : ''}" ${ok ? '' : 'disabled'}>${T('complete')}</button>`;
       } else {
         html = `<div class="goal-head">🏆 ${T('victory')}</div>`;
       }
@@ -348,6 +351,35 @@ const UI = {
     const tips = STR.tips[I18N.lang] || STR.tips.en;
     html += `<div class="tip">${tips[this.tipIdx % tips.length]}</div>`;
     this.setHTML(el, 'goal', html, force);
+  },
+
+  // Progress bars for a cost, with a "how to get it" line under items nothing is producing yet
+  goalRows(cost) {
+    let all = true, hints = 0;
+    const rows = Object.keys(cost).map(k => {
+      const have = G.inv[k] || 0, need = cost[k];
+      if (have < need) all = false;
+      const rate = G.stats.flow[k];
+      let row = `<div class="goal-row" title="${L(ITEMS[k].name)}">${Icons.img(k)}<div class="gbar"><div style="width:${Math.min(1, have / need) * 100}%"></div><span>${fmt(Math.min(have, need))} / ${fmt(need)}</span></div><span class="rate">${rate ? '+' + fmt(rate) + T('perMin') : ''}</span></div>`;
+      if (have < need && !rate && hints < 3) {
+        hints++;
+        row += `<div class="hint">💡 <b>${L(ITEMS[k].name)}:</b> ${this.itemHint(k)}</div>`;
+      }
+      return row;
+    }).join('');
+    return { rows, all };
+  },
+
+  itemHint(k) {
+    if (k === 'leaves' || k === 'wood') return T('hint_tree');
+    if (NODE_TYPES[k]) return T('hint_mine', L(ITEMS[k].name));
+    const ids = Object.keys(RECIPES).filter(id => RECIPES[id].out[k] && (RECIPES[id].alt ? G.alts.has(id) : G.unlockedR.has(id)));
+    if (!ids.length) return T('hint_locked');
+    const id = ids.find(i => !RECIPES[i].alt) || ids[0];
+    const r = RECIPES[id];
+    const ins = Object.keys(r.in).map(i => L(ITEMS[i].name)).join(' + ');
+    if (!G.unlockedB.has(r.m)) return T('hint_hand', recipeName(id), ins);
+    return T('hint_recipe', L(BUILDINGS[r.m].name), recipeName(id), ins) + ', ' + T('hint_belt');
   },
 
   // ---------- Panels ----------
@@ -701,12 +733,23 @@ const UI = {
           const ok = ex ? true : !checkPlace(this.tool, p.x, p.y);
           if (ok) count++;
           if (ok && (!ex || ex.type !== this.tool)) cost++;
+          const k = path.indexOf(p);
+          const curve = k > 0 && path[k - 1].dir !== p.dir ? (path[k - 1].dir + 2) % 4 : -1;
           ctx.globalAlpha = 0.65;
-          R.drawBelt(ctx, { type: this.tool, x: p.x, y: p.y, dir: p.dir }, t, false);
+          R.drawBelt(ctx, { type: this.tool, x: p.x, y: p.y, dir: p.dir }, t, false, curve);
           ctx.globalAlpha = 1;
           ctx.fillStyle = ok ? 'rgba(90,209,122,0.25)' : 'rgba(255,60,60,0.4)';
           ctx.fillRect(p.x * TILE, p.y * TILE, TILE, TILE);
           this.drawArrow(ctx, p.x, p.y, p.dir, ok ? '#fff' : '#ff8080');
+        }
+        if (this.beltStart) {
+          const st = this.beltStart;
+          ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3 / z;
+          ctx.strokeRect(st.x * TILE + 1, st.y * TILE + 1, TILE - 2, TILE - 2);
+          const lx = h.x * TILE + TILE + 4, ly = h.y * TILE - 6;
+          ctx.font = `bold ${13 / Math.max(z, 0.6)}px system-ui`; ctx.textAlign = 'left';
+          ctx.lineWidth = 3 / z; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(T('beltEnd'), lx, ly);
+          ctx.fillStyle = '#ffd23f'; ctx.fillText(T('beltEnd'), lx, ly);
         }
         if (path.length > 1) {
           const last = path[path.length - 1];

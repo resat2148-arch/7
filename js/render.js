@@ -337,12 +337,19 @@ const R = {
   },
 
   // ---------- Belts ----------
-  drawBelt(ctx, e, t, lod) {
+  // curve: world side the belt is fed from when it bends (-1 = straight, undefined = compute)
+  drawBelt(ctx, e, t, lod, curve) {
     const px = e.x * TILE, py = e.y * TILE;
     const tier = BUILDINGS[e.type].tier;
+    if (curve === undefined) curve = e.id ? beltCurve(e) : -1;
     ctx.save();
     ctx.translate(px + 16, py + 16);
     ctx.rotate(e.dir * Math.PI / 2);
+    if (curve >= 0) {
+      this.drawBeltCurve(ctx, e, t, lod, tier, curve === (e.dir + 3) % 4 ? -1 : 1);
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = '#23272e';
     ctx.fillRect(-16, -12, 32, 24);
     if (lod) { ctx.fillStyle = BELT_COLORS[tier]; ctx.fillRect(-16, -2, 32, 4); ctx.restore(); return; }
@@ -366,12 +373,57 @@ const R = {
     ctx.restore();
   },
 
+  // Quarter-circle belt in the local frame (exit towards +x). sgn -1: fed from the top edge, +1: from the bottom edge.
+  drawBeltCurve(ctx, e, t, lod, tier, sgn) {
+    const cy = 16 * sgn;          // pivot corner is (16, cy)
+    const a0 = Math.PI, a1 = Math.PI + sgn * Math.PI / 2;
+    const ring = (r0, r1, col) => {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(16, cy, r1, a0, a1, sgn < 0);
+      ctx.arc(16, cy, r0, a1, a0, sgn > 0);
+      ctx.closePath();
+      ctx.fill();
+    };
+    ring(4, 28, '#23272e');
+    if (lod) { ring(14, 18, BELT_COLORS[tier]); return; }
+    ring(7, 25, '#353b44');
+    // moving chevrons along the arc
+    const sp = BUILDINGS[e.type].speed;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 2;
+    for (let k = 0; k < 2; k++) {
+      const f = ((t * sp * 32 / 25) + k * 0.5) % 1;
+      const a = a0 + sgn * f * Math.PI / 2;
+      const x = 16 + Math.cos(a) * 16, y = cy + Math.sin(a) * 16;
+      const tx = Math.sin(a) * -sgn, ty = Math.cos(a) * sgn; // tangent (direction of travel)
+      const nx = -ty, ny = tx;
+      ctx.beginPath();
+      ctx.moveTo(x - tx * 3 + nx * 5, y - ty * 3 + ny * 5);
+      ctx.lineTo(x + tx * 2, y + ty * 2);
+      ctx.lineTo(x - tx * 3 - nx * 5, y - ty * 3 - ny * 5);
+      ctx.stroke();
+    }
+    ring(4, 7, BELT_COLORS[tier]);
+    ring(25, 28, BELT_COLORS[tier]);
+  },
+
   drawBeltItems(ctx, e) {
     const cx = e.x * TILE + 16, cy = e.y * TILE + 16;
     const size = this.cam.z > 1.5 ? 48 : 32;
+    const curve = beltCurve(e);
+    const ca = Math.cos(e.dir * Math.PI / 2), sa = Math.sin(e.dir * Math.PI / 2);
     for (const it of e.items) {
-      const off = (it.p - 0.5) * TILE;
-      const x = cx + DX[e.dir] * off, y = cy + DY[e.dir] * off;
+      let x, y;
+      if (curve >= 0) {
+        const sgn = curve === (e.dir + 3) % 4 ? -1 : 1;
+        const a = Math.PI + sgn * it.p * Math.PI / 2;
+        const lx = 16 + Math.cos(a) * 16, ly = 16 * sgn + Math.sin(a) * 16;
+        x = cx + lx * ca - ly * sa; y = cy + lx * sa + ly * ca;
+      } else {
+        const off = (it.p - 0.5) * TILE;
+        x = cx + DX[e.dir] * off; y = cy + DY[e.dir] * off;
+      }
       ctx.drawImage(Icons.get(it.i, size), x - 10, y - 10, 20, 20);
     }
   },
