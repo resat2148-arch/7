@@ -186,8 +186,10 @@ const UI = {
       case 'mute': Sound.setMuted(!Sound.muted); this.renderPanel(true); break;
       case 'save': if (saveGame()) this.toast('💾 ' + T('saved'), 'good'); break;
       case 'reset':
-        if (confirm(T('resetConfirm'))) { SDK.remove(SAVE_KEY); window.__noSave = true; location.reload(); }
+        this.modal(`<h2>🗑 ${T('resetGame')}</h2><p>${T('resetConfirm')}</p>
+          <div class="modal-btns"><button class="btn danger" data-act="reset-yes">${T('resetGame')}</button><button class="btn" data-act="modal-close">${T('close')}</button></div>`);
         break;
+      case 'reset-yes': SDK.remove(SAVE_KEY); window.__noSave = true; location.reload(); break;
       case 'skip-tut': G.tutorial = TUTORIAL.length; this.renderGoal(true); break;
       case 'decon-tool': this.selectTool(this.tool === 'decon' ? null : 'decon'); break;
       case 'rotate': this.rotate(); break;
