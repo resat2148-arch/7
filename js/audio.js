@@ -74,6 +74,9 @@ const Sound = (() => {
       [392, 523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, 0.35, 'sawtooth', 0.1, 1, i * 0.12));
       noise(1.2, 0.15, 300);
     },
+    shot() { if (limited('shot', 45)) noise(0.04, 0.12, 2600 + Math.random() * 800); },
+    boom() { if (limited('boom', 90)) { noise(0.45, 0.4, 160); tone(90, 0.35, 'sawtooth', 0.12, 0.4); } },
+    alarm() { [0, 0.35, 0.7].forEach(d => { tone(880, 0.25, 'square', 0.1, 0.6, d); }); },
     coupon() { tone(1200, 0.06, 'square', 0.08); tone(1600, 0.08, 'square', 0.08, 1, 0.06); },
   };
 

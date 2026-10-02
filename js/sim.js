@@ -55,7 +55,7 @@ function initWorld(seed) {
   G.crashAt = new Int16Array(G.W * G.H).fill(-1);
   G.slugs.forEach((s, i) => { G.slugAt[idx(s.x, s.y)] = i; });
   G.crashes.forEach((c, i) => { G.crashAt[idx(c.x, c.y)] = i; });
-  G.cx = w.cx; G.cy = w.cy;
+  G.cx = w.cx; G.cy = w.cy; G.rivalSpot = w.rival;
 }
 
 function newGame() {
@@ -65,6 +65,7 @@ function newGame() {
   START_RECIPES.forEach(r => G.unlockedR.add(r));
   const hub = createEnt('hub', G.cx - 2, G.cy - 2, 0);
   placeEnt(hub);
+  rivalInit(G.rivalSpot);
 }
 
 // ---------- Entities ----------
@@ -156,6 +157,7 @@ function checkPlace(type, x, y, opts) {
     const t = G.terr[i];
     if (t === TERR.WATER || t === TERR.ROCK) return 'cantPlace';
     if (G.crashAt[i] >= 0 && !G.crashesOpened.has(G.crashAt[i])) return 'cantPlace';
+    if (rivalStructAt(tx, ty)) return 'cantPlace';
     const o = G.occ[i];
     if (o) {
       const other = G.ents.get(o);
@@ -278,6 +280,7 @@ function routeBelt(a, b, rot) {
     const t = G.terr[i];
     if (t === TERR.WATER || t === TERR.ROCK) return false;
     if (G.crashAt[i] >= 0 && !G.crashesOpened.has(G.crashAt[i])) return false;
+    if (rivalStructAt(x, y)) return false;
     const o = G.occ[i];
     if (!o) return true;
     const e = G.ents.get(o);
@@ -414,6 +417,7 @@ function beltCurve(e) {
 
 // Attempt to insert an item into entity e travelling in direction d.
 function accept(e, item, d) {
+  if (e.broken) return false;
   switch (e.kind) {
     case 'belt': {
       if (d === (e.dir + 2) % 4) return false;
@@ -496,6 +500,7 @@ function simTick(dt) {
   let cap = 0, demand = 0;
   for (const e of ents.values()) {
     const d = BUILDINGS[e.type];
+    if (e.broken) { e.active = false; continue; }
     if (e.kind === 'hub') cap += hubPower();
     else if (e.kind === 'gen') {
       if (d.geyser) { e.hasFuel = !!e.node; }
@@ -515,6 +520,7 @@ function simTick(dt) {
 
   // --- Producers ---
   for (const e of ents.values()) {
+    if (e.broken) { e.status = 'broken'; e.active = false; continue; }
     switch (e.kind) {
       case 'gen': tickGen(e, dt, load); break;
       case 'miner': tickMiner(e, dt, factor); break;
@@ -526,12 +532,14 @@ function simTick(dt) {
 
   // --- Logistics ---
   for (const e of ents.values()) {
+    if (e.broken) continue;
     if (e.kind === 'belt') tickBelt(e, dt);
     else if (e.kind === 'splitter') tickSplitter(e);
     else if (e.kind === 'junction') tickJunction(e);
   }
 
   tickMarket(dt);
+  tickCombat(dt);
 
   // --- Flow statistics (10s windows) ---
   G.stats.winT += dt;
@@ -1004,6 +1012,9 @@ function unrle(data, target) {
 }
 
 function serialize() {
+  const cs = combatSave();
+  const invOut = Object.assign({}, G.inv);
+  for (const k in cs.inv) invOut[k] = (invOut[k] || 0) + cs.inv[k];
   const ents = [];
   for (const e of G.ents.values()) {
     const o = { t: e.type, x: e.x, y: e.y, d: e.dir };
@@ -1021,11 +1032,14 @@ function serialize() {
     if (e.buf) o.bf = e.buf;
     if (e.slots && e.slots.some(Boolean)) o.sl = e.slots;
     if (e.made) o.m = e.made;
+    if (e.broken) o.br = 1;
+    if (e.hp != null && e.hp < maxHpOf(e)) o.hp = Math.round(e.hp);
+    if (e.kills) o.k = e.kills;
     ents.push(o);
   }
   return JSON.stringify({
     v: 1, t: Date.now(), seed: G.seed, pt: Math.round(G.playTime),
-    inv: G.inv, ub: [...G.unlockedB], ur: [...G.unlockedR], ms: [...G.milestones], ph: G.phase, alts: [...G.alts],
+    inv: invOut, rv: cs.rv, ad: cs.ad, clog: cs.log, ub: [...G.unlockedB], ur: [...G.unlockedR], ms: [...G.milestones], ph: G.phase, alts: [...G.alts],
     cr$: G.credits, crt: G.creditsTotal, dem: G.demand, ord: G.orders, hot: G.hot, od: G.ordersDone, sold: G.itemsSold,
     sh: G.shards, hd: G.hardDrives, mc: G.mamChoice, cp: G.coupons, pts: G.points, ptt: G.pointsTotal, cpp: G.couponsPrinted,
     sl: [...G.slugsTaken], cr: [...G.crashesOpened], tc: [...G.treesCut],
@@ -1078,8 +1092,18 @@ function deserialize(json) {
     if (o.bf && ITEMS[o.bf]) e.buf = o.bf;
     if (o.sl) e.slots = o.sl.map(v => (v && ITEMS[v] ? v : null));
     if (o.m) e.made = o.m;
+    if (o.br) e.broken = true;
+    if (o.hp != null) e.hp = o.hp;
+    if (o.k) e.kills = o.k;
     placeEnt(e);
   }
+  // rival faction
+  G.units = []; G.battle = null;
+  G.autoDefend = s.ad !== false; G.combatLog = s.clog || [];
+  if (s.rv) {
+    G.rival = s.rv;
+    for (const st of G.rival.structs) for (let j = 0; j < st.size; j++) for (let i = 0; i < st.size; i++) G.trees[idx(st.x + i, st.y + j)] = 0;
+  } else rivalInit(G.rivalSpot);
   if (s.lang) I18N.lang = s.lang;
   if (s.mute) Sound.setMuted(true);
   G.dirty.fog = true;

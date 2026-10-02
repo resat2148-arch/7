@@ -49,6 +49,12 @@ const ITEMS = {
   ai_limiter:     { name: n('AI Limiter', 'YZ Sınırlayıcı'), shape: 'chip', color: '#e58b52', c2: '#f3d25a', value: 920 },
   hsc:            { name: n('High-Speed Connector', 'Yüksek Hızlı Konektör'), shape: 'hsc', color: '#f3d25a', c2: '#5d6b78', value: 3776 },
   supercomputer:  { name: n('Supercomputer', 'Süper Bilgisayar'), shape: 'super', color: '#2e333b', c2: '#ff5ad1', value: 97352 },
+  // Military
+  black_powder:   { name: n('Black Powder', 'Barut'), shape: 'powder', color: '#3a3a42', c2: '#8a8aa0', value: 14 },
+  ammo:           { name: n('Ammo', 'Mühimmat'), shape: 'ammo', color: '#e0a03c', c2: '#8a5a20', value: 4 },
+  rifle:          { name: n('Rifle', 'Tüfek'), shape: 'rifle', color: '#5d6b78', c2: '#8b5a2b', value: 300 },
+  combat_drone:   { name: n('Combat Drone', 'Savaş Dronu'), shape: 'drone', color: '#4b5462', c2: '#4fb3ff', value: 3500 },
+  tank:           { name: n('Tank', 'Tank'), shape: 'tank', color: '#5b6b3a', c2: '#3a4426', value: 25000 },
   // Consumer electronics branch
   glass:          { name: n('Glass', 'Cam'), shape: 'glass', color: '#9fe3ff', value: 30 },
   battery:        { name: n('Battery', 'Pil'), shape: 'battery', color: '#5ad17a', c2: '#2e333b', value: 400 },
@@ -106,6 +112,12 @@ const RECIPES = {
   acu:            { m: 'manufacturer', in: { aw: 5, circuit_board: 5, hmf: 1, computer: 2 }, out: { acu: 2 }, t: 60 },
   hsc:            { m: 'manufacturer', in: { quickwire: 56, cable: 10, circuit_board: 1 }, out: { hsc: 1 }, t: 16 },
   supercomputer:  { m: 'manufacturer', in: { computer: 4, ai_limiter: 2, hsc: 3, plastic: 28 }, out: { supercomputer: 1 }, t: 32 },
+  // Military
+  black_powder:   { m: 'assembler', in: { coal: 2, limestone: 1 }, out: { black_powder: 2 }, t: 8, hand: true },
+  ammo:           { m: 'assembler', in: { copper_sheet: 1, black_powder: 1 }, out: { ammo: 10 }, t: 6, hand: true },
+  rifle:          { m: 'arms_factory', in: { steel_pipe: 3, iron_plate: 4, screw: 12 }, out: { rifle: 1 }, t: 10 },
+  combat_drone:   { m: 'arms_factory', in: { motor: 1, stator: 1, rifle: 1, steel_beam: 2 }, out: { combat_drone: 1 }, t: 20 },
+  tank:           { m: 'arms_factory', in: { hmf: 1, motor: 4, eib: 4, rubber: 10 }, out: { tank: 1 }, t: 45 },
   // Consumer electronics
   glass:          { m: 'smelter', in: { limestone: 2 }, out: { glass: 1 }, t: 4 },
   battery:        { m: 'assembler', in: { plastic: 2, copper_sheet: 2 }, out: { battery: 1 }, t: 8, hand: true },
@@ -196,13 +208,17 @@ const BUILDINGS = {
     desc: n('Reveals a large area around it.', 'Çevresindeki geniş bir alanı açığa çıkarır.') },
   sink: { kind: 'sink', size: 3, power: 30, name: n('Resource Sink', 'Kaynak Havuzu'), cat: 'special', cost: { rip: 15, cable: 30, concrete: 45 }, reveal: 5,
     desc: n('Destroys any item for points. Points print Coupons.', 'Herhangi bir eşyayı puan karşılığı yok eder. Puanlar kupon basar.') },
+  arms_factory: { kind: 'machine', size: 3, power: 25, name: n('Arms Factory', 'Silah Fabrikası'), cat: 'military', cost: { steel_beam: 20, rotor: 10, modular_frame: 5 }, reveal: 6,
+    desc: n('Builds Rifles, Combat Drones and Tanks.', 'Tüfek, Savaş Dronu ve Tank üretir.') },
+  defense_turret: { kind: 'turret', size: 2, power: 5, name: n('Defense Turret', 'Savunma Tareti'), cat: 'military', cost: { steel_pipe: 10, rotor: 4, iron_plate: 20 }, reveal: 8,
+    desc: n('Shoots enemy units within 7 tiles. Uses 1 Ammo from storage per shot.', '7 kare içindeki düşman birimlerine ateş eder. Her atışta depodan 1 Mühimmat kullanır.') },
   trade_port: { kind: 'market', size: 3, power: 20, name: n('Trade Port', 'Ticaret Limanı'), cat: 'special', cost: { iron_plate: 50, iron_rod: 30, wire: 30 }, reveal: 5,
     desc: n('Automatically sells everything belted into it for Credits at the current market price.', 'İçine bantlanan her şeyi güncel piyasa fiyatından otomatik olarak Krediye satar.') },
   space_elevator: { kind: 'elevator', size: 5, unique: true, name: n('Space Elevator', 'Uzay Asansörü'), cat: 'special', cost: { concrete: 100, iron_plate: 50, iron_rod: 100 }, reveal: 10,
     desc: n('Ship Project Parts to orbit to unlock new Tiers.', 'Yeni seviyeler açmak için Proje Parçalarını yörüngeye gönder.') },
 };
 
-const CATEGORIES = ['logistics', 'production', 'power', 'special'];
+const CATEGORIES = ['logistics', 'production', 'power', 'military', 'special'];
 
 const START_BUILDINGS = ['belt1', 'miner1', 'smelter', 'constructor'];
 const START_RECIPES = ['iron_ingot', 'iron_plate', 'iron_rod'];
@@ -225,11 +241,14 @@ const MILESTONES = [
   { id: 'm2_sink', tier: 2, name: n('Resource Sink Program', 'Kaynak Havuzu Programı'), cost: { rotor: 20, modular_frame: 5 }, b: ['sink'], r: [] },
   { id: 'm3_steel', tier: 3, name: n('Basic Steel Production', 'Temel Çelik Üretimi'), cost: { rotor: 40, modular_frame: 20, concrete: 200 }, b: ['foundry'], r: ['steel_ingot', 'steel_beam', 'steel_pipe'] },
   { id: 'm3_logistics', tier: 3, name: n('Logistics Mk.3', 'Lojistik Mk.3'), cost: { steel_beam: 100, rip: 50 }, b: ['belt3'], r: [], shards: 2 },
+  { id: 'm3_munitions', tier: 3, name: n('Munitions', 'Mühimmat'), cost: { steel_pipe: 60, steel_beam: 30, rotor: 20 }, b: ['arms_factory', 'defense_turret'], r: ['black_powder', 'ammo', 'rifle'] },
+  { id: 'm4_drones', tier: 4, name: n('Combat Drones', 'Savaş Dronları'), cost: { rifle: 20, motor: 20, stator: 30 }, b: [], r: ['combat_drone'], shards: 1 },
   { id: 'm4_adv', tier: 4, name: n('Advanced Steel Production', 'İleri Çelik Üretimi'), cost: { steel_pipe: 200, steel_beam: 100, rotor: 50 }, b: ['miner2'], r: ['eib', 'stator', 'motor', 'vf', 'aw'] },
   { id: 'm5_oil', tier: 5, name: n('Oil Processing', 'Petrol İşleme'), cost: { motor: 50, eib: 100, modular_frame: 50 }, b: ['oil_extractor', 'refinery'], r: ['plastic', 'rubber', 'fuel', 'circuit_board'] },
   { id: 'm5_logistics', tier: 5, name: n('Logistics Mk.4', 'Lojistik Mk.4'), cost: { rubber: 200, eib: 50 }, b: ['belt4'], r: [], shards: 2 },
   { id: 'm5_fuel', tier: 5, name: n('Fuel Power', 'Yakıt Gücü'), cost: { plastic: 100, motor: 30 }, b: ['fuel_gen'], r: [] },
   { id: 'm6_ind', tier: 6, name: n('Industrial Manufacturing', 'Endüstriyel İmalat'), cost: { circuit_board: 100, motor: 50, plastic: 200 }, b: ['manufacturer'], r: ['computer', 'hmf', 'modular_engine', 'acu'] },
+  { id: 'm6_armor', tier: 6, name: n('Heavy Armor', 'Ağır Zırh'), cost: { combat_drone: 20, hmf: 10, rubber: 200 }, b: [], r: ['tank'], shards: 2 },
   { id: 'm6_cat', tier: 6, name: n('Caterium Electronics', 'Katerium Elektroniği'), cost: { circuit_board: 50, vf: 50 }, b: ['geothermal'], r: ['caterium_ingot', 'quickwire', 'ai_limiter'] },
   { id: 'm7_super', tier: 7, name: n('Supercomputing', 'Süper Hesaplama'), cost: { computer: 50, circuit_board: 200, hmf: 20 }, b: [], r: ['hsc', 'supercomputer'] },
   { id: 'm5_components', tier: 5, name: n('Electronic Components', 'Elektronik Bileşenler'), cost: { circuit_board: 30, motor: 20, plastic: 100 }, b: [], r: ['glass', 'battery', 'speaker'] },
@@ -281,6 +300,9 @@ const ACHIEVEMENTS = [
   { id: 'first_sale', name: n('Entrepreneur', 'Girişimci'), desc: n('Sell your first item', 'İlk eşyanı sat') },
   { id: 'orders_10', name: n('Reliable Supplier', 'Güvenilir Tedarikçi'), desc: n('Complete 10 orders', '10 sipariş tamamla') },
   { id: 'credits_1m', name: n('Millionaire', 'Milyoner'), desc: n('Earn 1,000,000 Credits in total', 'Toplam 1.000.000 Kredi kazan') },
+  { id: 'first_defense', name: n('Stronghold', 'Kale Gibi'), desc: n('Repel a raid', 'Bir baskını püskürt') },
+  { id: 'rival_hq', name: n('Conqueror', 'Fatih'), desc: n('Destroy the rival headquarters', 'Rakip karargâhını yık') },
+  { id: 'army_30', name: n('Field Marshal', 'Mareşal'), desc: n('Deploy 30 units at once', 'Aynı anda 30 birim konuşlandır') },
   { id: 'machines_50', name: n('Industrialist', 'Sanayici'), desc: n('Have 50 production buildings', '50 üretim binan olsun') },
 ];
 
@@ -337,3 +359,28 @@ const CUSTOMERS = [
   n('Stellar Electronics', 'Yıldız Elektronik'), n('Comet Couriers', 'Kuyruklu Yıldız Kargo'), n('Titan Shipyard', 'Titan Tersanesi'),
   n('Galactic Mall', 'Galaktik AVM'),
 ];
+
+// ---------- Military ----------
+// Units on the battlefield. items: what one unit costs from storage; power: rough strength for the army overview.
+const UNITS = {
+  infantry: { name: n('Rifle Squad', 'Tüfekli Tim'), items: { rifle: 1, ammo: 10 }, hp: 40, dmg: 6, range: 4, rof: 1, speed: 1.5, power: 1, bounty: 60 },
+  drone:    { name: n('Combat Drone', 'Savaş Dronu'), items: { combat_drone: 1 }, hp: 70, dmg: 10, range: 5, rof: 1.2, speed: 2.6, power: 6, bounty: 400 },
+  tank:     { name: n('Tank', 'Tank'), items: { tank: 1, ammo: 20 }, hp: 320, dmg: 36, range: 6, rof: 0.5, speed: 0.9, power: 30, bounty: 2500, splash: 1.5 },
+};
+const TURRET = { range: 7, dmg: 8, rof: 2, hp: 300 };
+const RIVAL = {
+  name: n('Crimson Consortium', 'Kızıl Konsorsiyum'),
+  raidPhase: 2,            // raids begin after this Space Elevator phase
+  raidEvery: [480, 720],   // seconds between raids (game time)
+  firstRaidDelay: 300,
+  raidTimeout: 200,        // raiders retreat after this long
+  buildEvery: 360,         // rival adds a structure this often
+  maxStructs: 12,
+  hqRegroup: 900,          // pause after its HQ falls
+  structs: {
+    hq:      { name: n('Consortium HQ', 'Konsorsiyum Karargâhı'), size: 4, hp: 3000, loot: 8000 },
+    factory: { name: n('Weapons Plant', 'Silah Tesisi'), size: 3, hp: 900, loot: 1500 },
+    turret:  { name: n('Rival Turret', 'Rakip Taret'), size: 2, hp: 450, loot: 500, range: 7, dmg: 9, rof: 1.5 },
+    power:   { name: n('Rival Reactor', 'Rakip Reaktör'), size: 2, hp: 600, loot: 800 },
+  },
+};

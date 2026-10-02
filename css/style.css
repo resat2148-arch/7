@@ -286,3 +286,23 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .order.ready { border-color: var(--good); }
 .gold { color: #ffd23f; }
 .bad { color: var(--bad); }
+
+/* ---------- Army ---------- */
+#battleBanner { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); padding: 7px 18px; border-radius: 20px; font-weight: 800;
+  z-index: 9; cursor: pointer; display: none; white-space: nowrap; }
+#battleBanner.red, #battleBanner.blue, #battleBanner.warn { display: block; }
+#battleBanner.red { background: #8a1a1acc; border: 1px solid #ff4a4a; animation: pulse 0.8s infinite; }
+#battleBanner.blue { background: #1e4f8acc; border: 1px solid #4fb3ff; }
+#battleBanner.warn { background: #6a4a0acc; border: 1px solid #ffcc4d; animation: pulse 1.2s infinite; }
+#lowpower.show ~ #battleBanner { top: 96px; }
+.army-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.army-grid .mkt-row { margin-bottom: 4px; }
+.toggle { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 13px; cursor: pointer; }
+.notice.bad-n { border-color: var(--bad); }
+.log { font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; max-height: 160px; overflow-y: auto; }
+@media (max-width: 700px) { .army-grid { grid-template-columns: 1fr; } }
+@media (max-height: 700px) {
+  #sidebar { gap: 5px; max-height: calc(100vh - 70px); overflow-y: auto; }
+  .side-btn { width: 44px; height: 44px; flex: none; }
+  .side-ico { font-size: 20px; }
+}

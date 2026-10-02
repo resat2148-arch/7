@@ -339,6 +339,49 @@ const Icons = (() => {
         ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(0.62, 0.53, 0.04, 0, 7); ctx.fill();
         break;
       }
+      case 'powder': {
+        ctx.fillStyle = shade(c, -0.15);
+        ctx.beginPath(); ctx.moveTo(0.12, 0.78); ctx.quadraticCurveTo(0.5, 0.12, 0.88, 0.78); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c2;
+        [[0.4, 0.5], [0.55, 0.62], [0.5, 0.4], [0.64, 0.7], [0.32, 0.68]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 0.035, 0, 7); ctx.fill(); });
+        break;
+      }
+      case 'ammo': {
+        for (let k = 0; k < 3; k++) {
+          const x = 0.24 + k * 0.2;
+          ctx.fillStyle = c; ctx.fillRect(x, 0.42, 0.14, 0.42); ctx.strokeRect(x, 0.42, 0.14, 0.42);
+          ctx.fillStyle = c2; ctx.beginPath(); ctx.moveTo(x, 0.42); ctx.quadraticCurveTo(x + 0.07, 0.1, x + 0.14, 0.42); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = shade(c, 0.4); ctx.fillRect(x + 0.02, 0.48, 0.03, 0.3);
+        }
+        break;
+      }
+      case 'rifle': {
+        ctx.save(); ctx.translate(0.5, 0.5); ctx.rotate(-0.5); ctx.translate(-0.5, -0.5);
+        ctx.fillStyle = c2; ctx.beginPath(); ctx.moveTo(0.06, 0.5); ctx.lineTo(0.3, 0.46); ctx.lineTo(0.3, 0.6); ctx.lineTo(0.1, 0.66); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c; ctx.fillRect(0.28, 0.44, 0.4, 0.1); ctx.strokeRect(0.28, 0.44, 0.4, 0.1);
+        ctx.fillRect(0.66, 0.46, 0.28, 0.05);
+        ctx.fillRect(0.42, 0.54, 0.07, 0.14);
+        ctx.fillStyle = '#ff4a4a'; ctx.fillRect(0.45, 0.39, 0.12, 0.05);
+        ctx.restore();
+        break;
+      }
+      case 'drone': {
+        ctx.strokeStyle = c; ctx.lineWidth = 0.07;
+        ctx.beginPath(); ctx.moveTo(0.22, 0.22); ctx.lineTo(0.78, 0.78); ctx.moveTo(0.78, 0.22); ctx.lineTo(0.22, 0.78); ctx.stroke();
+        ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 0.04;
+        [[0.22, 0.22], [0.78, 0.22], [0.22, 0.78], [0.78, 0.78]].forEach(([x, y]) => { ctx.fillStyle = '#d9dde2'; ctx.beginPath(); ctx.ellipse(x, y, 0.13, 0.05, 0.6, 0, 7); ctx.fill(); ctx.stroke(); });
+        ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0.5, 0.5, 0.15, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(0.5, 0.5, 0.06, 0, 7); ctx.fill();
+        break;
+      }
+      case 'tank': {
+        ctx.fillStyle = '#2a2f37'; rr(ctx, 0.1, 0.58, 0.8, 0.2, 0.08); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#6c7a88'; [0.22, 0.38, 0.54, 0.7].forEach(x => { ctx.beginPath(); ctx.arc(x + 0.04, 0.68, 0.05, 0, 7); ctx.fill(); });
+        ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(0.12, 0.58); ctx.lineTo(0.2, 0.44); ctx.lineTo(0.8, 0.44); ctx.lineTo(0.88, 0.58); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c2; rr(ctx, 0.34, 0.3, 0.3, 0.15, 0.05); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c2; ctx.fillRect(0.62, 0.34, 0.3, 0.05);
+        break;
+      }
       default: {
         ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0.5, 0.5, 0.3, 0, 7); ctx.fill(); ctx.stroke();
       }

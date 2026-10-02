@@ -45,13 +45,13 @@ const UI = {
 
   buildStatic() {
     $('#sidebar').innerHTML = [
-      ['hub', '🏠', 'H'], ['elevator', '🚀', 'E'], ['inv', '📦', 'I'], ['mam', '💾', 'M'], ['market', '💰', 'B'], ['shop', '🎟', 'K'], ['ach', '🏆', 'J'],
+      ['hub', '🏠', 'H'], ['elevator', '🚀', 'E'], ['inv', '📦', 'I'], ['mam', '💾', 'M'], ['market', '💰', 'B'], ['army', '⚔', 'G'], ['shop', '🎟', 'K'], ['ach', '🏆', 'J'],
     ].map(([p, ic, k]) => `<button class="side-btn" data-act="open" data-arg="${p}" title=""><span class="side-ico">${ic}</span><span class="side-key">${k}</span><span class="badge" id="badge-${p}"></span></button>`).join('');
     this.applyTitles();
   },
 
   applyTitles() {
-    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), market: T('market'), shop: T('shop'), ach: T('achievements') };
+    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), market: T('market'), army: T('army'), shop: T('shop'), ach: T('achievements') };
     document.querySelectorAll('.side-btn').forEach(b => { b.title = titles[b.dataset.arg]; });
     $('#btnSettings').title = T('settings');
     $('#loadingText').textContent = T('loading');
@@ -145,6 +145,13 @@ const UI = {
       case 'phase-submit': submitPhase(); this.renderPanel(true); break;
       case 'alt-choose': if (chooseAlt(arg || null)) { Sound.sfx.milestone(); this.toast('💾 ' + T('altUnlocked') + ': ' + (arg ? recipeName(arg) : '+3 💎'), 'good'); this.renderPanel(true); } break;
       case 'shop-buy': this.shopBuy(arg); break;
+      case 'attack': if (launchAttack()) { Sound.sfx.alarm(); this.openPanel(null); this.focusBattle(); } break;
+      case 'recall': recallArmy(); this.toast('↩ ' + T('recalled')); this.renderPanel(true); break;
+      case 'auto-defend': G.autoDefend = !G.autoDefend; Sound.sfx.click(); this.renderPanel(true); break;
+      case 'goto-rival': if (G.rival) { R.cam.x = G.rival.x * TILE; R.cam.y = G.rival.y * TILE; this.openPanel(null); } break;
+      case 'battle-focus': this.focusBattle(); break;
+      case 'repair': { const e = ent(this.selected); if (e && repairEnt(e)) { Sound.sfx.place(); this.renderInspect(true); } break; }
+      case 'repair-all': { const n = repairAll(); if (n) { Sound.sfx.place(); this.toast('🔧 ' + T('repairedN', n), 'good'); } else this.toast(T('notEnough'), 'bad'); this.renderPanel(true); break; }
       case 'market-tab': this.marketTab = arg; Sound.sfx.click(); this.renderPanel(true); break;
       case 'order-deliver': if (fulfillOrder(parseInt(arg, 10))) this.renderPanel(true); break;
       case 'order-skip': if (skipOrder(parseInt(arg, 10))) { Sound.sfx.click(); this.renderPanel(true); } break;
@@ -357,6 +364,11 @@ const UI = {
     this.badge('elevator', ph && elevatorBuilt() && canAfford(ph.cost) ? '!' : '');
     this.badge('mam', G.hardDrives ? String(G.hardDrives) : '');
     this.badge('shop', G.coupons ? String(G.coupons) : '');
+    const showArmy = militaryUnlocked() || (G.rival && G.rival.discovered) || !!G.battle;
+    document.querySelector('[data-arg="army"].side-btn').style.display = showArmy ? '' : 'none';
+    let broken = 0; for (const e of G.ents.values()) if (e.broken) broken++;
+    this.badge('army', G.battle ? '⚔' : broken ? String(broken) : '');
+    this.updateBattleBanner();
     const ready = G.orders.filter(o => o && (G.inv[o.item] || 0) >= o.qty).length;
     this.badge('market', ready ? String(ready) : '');
     document.querySelector('[data-arg="elevator"].side-btn').style.display = G.unlockedB.has('space_elevator') ? '' : 'none';
@@ -446,7 +458,7 @@ const UI = {
 
   renderPanel(force) {
     if (!this.panel) return;
-    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), market: T('market'), shop: T('shop'), ach: T('achievements'), settings: T('settings') };
+    const titles = { hub: T('milestones'), elevator: T('elevator'), inv: T('inventory'), mam: T('mam'), market: T('market'), army: T('army'), shop: T('shop'), ach: T('achievements'), settings: T('settings') };
     $('#panelTitle').textContent = titles[this.panel];
     let html = '';
     switch (this.panel) {
@@ -455,6 +467,7 @@ const UI = {
       case 'inv': html = this.invHTML(); break;
       case 'mam': html = this.mamHTML(); break;
       case 'market': html = this.marketHTML(); break;
+      case 'army': html = this.armyHTML(); break;
       case 'shop': html = this.shopHTML(); break;
       case 'ach': html = this.achHTML(); break;
       case 'settings': html = this.settingsHTML(); break;
@@ -566,6 +579,62 @@ const UI = {
     const outs = Object.keys(r.out).map(k => `<span class="cost ok">${Icons.img(k)}${r.out[k]} <small>(${pm(r.out[k])}${T('perMin')})</small></span>`).join('');
     return `<div class="ms-name">${recipeName(id)} <em class="alt">${T('alt')}</em></div><div class="muted small">${L(BUILDINGS[r.m].name)} · ${r.t}s</div>
       <div class="recipe-io">${ins}<span class="arrow">➜</span>${outs}</div>`;
+  },
+
+  // ---------- Army ----------
+  focusBattle() {
+    const us = G.units.filter(u => u.team === 'r').length ? G.units.filter(u => u.team === 'r') : G.units;
+    if (!us.length) return;
+    let x = 0, y = 0; us.forEach(u => { x += u.x; y += u.y; });
+    R.cam.x = x / us.length * TILE; R.cam.y = y / us.length * TILE;
+  },
+
+  updateBattleBanner() {
+    const el = $('#battleBanner');
+    let html = '', cls = '';
+    const reds = G.units.filter(u => u.team === 'r').length, blues = G.units.filter(u => u.team === 'p').length;
+    if (G.battle && G.battle.kind === 'raid') { html = `⚔ ${T('raidNow')} · ☠ ${reds} · 🛡 ${blues}`; cls = 'red'; }
+    else if (G.battle) { html = `⚔ ${T('attackNow')} · 🛡 ${blues} · ☠ ${reds}`; cls = 'blue'; }
+    else if (G.rival && raidsEnabled() && G.rival.nextRaid && G.rival.nextRaid - G.time < 90) { html = `⚠ ${T('raidSoon', L(RIVAL.name), fmtTime(G.rival.nextRaid - G.time))}`; cls = 'warn'; }
+    el.className = cls; el.innerHTML = html;
+  },
+
+  armyHTML() {
+    const a = availableArmy(), r = G.rival;
+    const unitRow = (type, n) => `<div class="mkt-row">${Icons.img(type === 'infantry' ? 'rifle' : type === 'drone' ? 'combat_drone' : 'tank')}
+      <span class="nm">${L(UNITS[type].name)} <small class="muted">${Object.keys(UNITS[type].items).map(k => UNITS[type].items[k] + ' ' + L(ITEMS[k].name)).join(' + ')}</small></span><b>${n}</b></div>`;
+    let broken = 0; for (const e of G.ents.values()) if (e.broken) broken++;
+    let html = `<div class="army-grid"><div><h3>🛡 ${T('yourForces')}</h3>
+      ${unitRow('infantry', a.infantry)}${unitRow('drone', a.drone)}${unitRow('tank', a.tank)}
+      <div class="mkt-row"><img class="ico" src="${R.buildingIcon('defense_turret')}" alt=""><span class="nm">${L(BUILDINGS.defense_turret.name)} <small class="muted">${Icons.img('ammo')} ${fmt(G.inv.ammo || 0)}</small></span><b>${turretCount()}</b></div>
+      <div class="notice">${T('armyPower')}: <b>${armyPower(a) + turretCount() * 4}</b></div>
+      <label class="toggle"><input type="checkbox" data-act="auto-defend" ${G.autoDefend ? 'checked' : ''}> ${T('autoDefend')}</label>
+      ${broken ? `<div class="notice bad-n">🔧 ${T('brokenN', broken)} <button class="btn small" data-act="repair-all">${T('repairAll')}</button></div>` : ''}
+      </div><div><h3>☠ ${L(RIVAL.name)}</h3>`;
+    if (!r || !r.discovered) {
+      html += `<p class="muted">${T('rivalUnknown', this.compass())}</p>`;
+    } else {
+      const down = r.hqDownUntil > G.time;
+      html += `<div class="mkt-row"><span class="nm">${T('rivalLevel')}</span><b>${rivalLevel()}</b></div>
+        <div class="mkt-row"><span class="nm">${T('rivalPower')}</span><b>${rivalPower()}</b></div>
+        <div class="mkt-row"><span class="nm">${T('rivalStructs')}</span><b>${r.structs.length}</b></div>
+        <div class="muted small">${down ? T('rivalDown', fmtTime(r.hqDownUntil - G.time)) : raidsEnabled() ? (r.nextRaid ? T('nextRaid', fmtTime(Math.max(0, r.nextRaid - G.time))) : '') : T('raidsLater', RIVAL.raidPhase)}</div>
+        <div class="ms-btns" style="margin-top:8px">
+          <button class="btn ${!G.battle && armyPower(a) > 0 && !down ? 'primary' : ''}" data-act="attack" ${!G.battle && armyPower(a) > 0 && !down ? '' : 'disabled'}>⚔ ${T('attack')}</button>
+          <button class="btn small" data-act="goto-rival">📍 ${T('gotoRival')}</button>
+          ${G.units.some(u => u.team === 'p') ? `<button class="btn small" data-act="recall">↩ ${T('recall')}</button>` : ''}
+        </div>`;
+    }
+    if (!militaryUnlocked()) html += `<div class="notice">🔒 ${T('militaryLocked')}</div>`;
+    html += `</div></div><h3>📜 ${T('battleLog')}</h3><div class="log">` + (G.combatLog.length ? G.combatLog.map(l => `<div>${l.text}</div>`).join('') : `<div class="muted">–</div>`) + '</div>';
+    return html;
+  },
+
+  compass() {
+    if (!G.rival) return '?';
+    const a = Math.atan2(G.rival.y - G.cy, G.rival.x - G.cx);
+    const dirs = I18N.lang === 'tr' ? ['doğu', 'güneydoğu', 'güney', 'güneybatı', 'batı', 'kuzeybatı', 'kuzey', 'kuzeydoğu'] : ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
+    return dirs[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
   },
 
   // ---------- Market ----------
@@ -723,7 +792,13 @@ const UI = {
     const st = e.status ? `<span class="status" style="background:${STATUS_COLORS[e.status] || '#555'}">${T('status_' + e.status)}</span>` : '';
     let html = `<div class="insp-head"><img src="${R.buildingIcon(e.type)}" alt=""><div><b>${L(d.name)}</b><br>${st}</div><button class="x" data-act="close-inspect">✕</button></div>`;
     const clockMult = e.clock || 1;
-    if (e.kind === 'machine') {
+    if (e.broken) {
+      html += `<div class="notice bad-n">🔧 ${T('brokenHelp')}<div class="costs">${this.costHTML(repairCost(e))}</div>
+        <button class="btn primary small" data-act="repair" style="margin-top:6px">${T('repair')}</button></div>`;
+    }
+    if (e.kind === 'turret') {
+      html += `<p class="muted small">${L(d.desc)}</p><div class="io-row">${Icons.img('ammo')} ${T('inStorage')}: <b>${fmt(G.inv.ammo || 0)}</b></div><div class="io-row">☠ ${T('kills')}: <b>${e.kills || 0}</b></div>`;
+    } else if (e.kind === 'machine') {
       const rs = recipesFor(e.type);
       html += `<div class="sect">${T('recipe')}</div><div class="recipes">` + rs.map(id =>
         `<button class="rbtn ${e.recipe === id ? 'on' : ''}" data-act="set-recipe" data-arg="${id}" title="${recipeName(id)}">${Icons.img(recipeMainOut(id))}<span>${recipeName(id)}</span>${RECIPES[id].alt ? '<em class="alt">ALT</em>' : ''}</button>`).join('') + '</div>';
@@ -1007,6 +1082,8 @@ const UI = {
   worldTip(tile) {
     if (!tile || !inBounds(tile.x, tile.y)) return '';
     const i = idx(tile.x, tile.y);
+    const rs = G.revealed[i] && rivalStructAt(tile.x, tile.y);
+    if (rs) return `<b style="color:#ff6a5a">☠ ${L(RIVAL.structs[rs.type].name)}</b><div>${Math.ceil(rs.hp)} / ${rs.maxHp} HP</div>`;
     if (!G.revealed[i]) return `<span class="muted">${T('fog')}</span>`;
     const e = entAt(tile.x, tile.y);
     if (e) {

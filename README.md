@@ -25,6 +25,7 @@ python3 -m http.server 8000   # sonra http://localhost:8000
 | AWESOME Sink + kupon dükkanı | Kaynak Havuzu herhangi bir eşyayı puana çeviriyor, puanlar kupon basıyor. Kuponla Güç Parçası, Sabit Disk ve Malzeme Sandığı alınıyor. |
 | *(Satisfactory'de yok, ek)* Tüketici elektroniği | Mevcut kaynaklardan yeni parçalar: Cam (kireçtaşı), Pil, Hoparlör, Ekran Paneli, Mikroçip, Kamera Modülü. Yeni **Elektronik Fabrikası** bunlardan Televizyon, Akıllı Telefon, Dizüstü Bilgisayar ve Oyun Konsolu üretiyor. Son Uzay Asansörü fazı 50 akıllı telefon istiyor. |
 | *(Satisfactory'de yok, ek)* Pazar | Yeni para birimi **Kredi (💰)**. Pazar panelinde (B) üç sekme var: **Siparişler** (müşteriler piyasanın 2,5 katını öder, bazen kupon da verir), **Sat** (aynı eşyadan çok satınca fiyat bir süre düşer, 🔥 talepteki eşya %50 fazla satılır) ve **Al** (takıldığın parçayı değerinin 3 katına al, Güç Parçası ve Sabit Disk de alınabilir). **Ticaret Limanı** binası içine bantlanan her şeyi otomatik satar (HUB Yükseltme 3 ile açılır). Kredi kazancı çevrimdışı ilerlemeye de dahil. |
+| *(Satisfactory'de yok, ek)* Silahlar ve rakip | **Mühimmat** kilometre taşı (Seviye 3) ile Barut, Mühimmat, Tüfek, **Silah Fabrikası** ve **Savunma Tareti** açılır. Ardından Savaş Dronu (Seviye 4) ve Tank (Seviye 6) gelir. Haritanın uzak bir köşesinde yapay zekâ rakip **Kızıl Konsorsiyum** var: zamanla yeni yapılar kurar ve oyuncunun ilerlemesine göre silahlanır. Uzay Asansörü Faz 2'den sonra baskın yapar: birimleri haritada yürür, binalara ateş eder, hasar verdiği binalar onarılana kadar durur, HUB'a ulaşırsa kredi çalar. Taretler depodaki mühimmatı kullanır, birliklerin otomatik savunmaya çıkar. Ordu panelinden (G) rakip üssüne saldırıp yapılarını yıkabilir, ganimet toplayabilirsin. Karargâh düşerse rakip bir süre toparlanır ve daha güçlü döner. |
 | Boyutsal Depo Yükleyici | Uzaktaki üretimi merkeze taşıyor (120/dk). |
 | El ile kazma ve üretim | Düğüme tıklayınca cevher, ağaca tıklayınca yaprak/odun geliyor. Parçalar basılı tutarak elle üretiliyor. |
 | Söküm %100 iade | Aynen korundu. Deneme yapmak cezasız. |
@@ -68,7 +69,7 @@ CrazyGames'e yüklemek için tüm klasörü (`index.html`, `css/`, `js/`) zip'le
 | Döndür / İptal | R / Sağ tık, Esc | Ekrandaki butonlar |
 | Binayı kopyala (tarifiyle) | Q | – |
 | Söküm modu | X | Araç çubuğunda "Sök" |
-| Paneller | H (HUB), E (Asansör), I (Depo), M (MAM), B (Pazar), K (Dükkan), J (Başarımlar) | Sağdaki butonlar |
+| Paneller | H (HUB), E (Asansör), I (Depo), M (MAM), B (Pazar), G (Ordu), K (Dükkan), J (Başarımlar) | Sağdaki butonlar |
 | Kısayol çubuğu | 1-9 | – |
 
 **Lojistik kuralı:** Bir makineden **dışarı bakan** bant çıktıyı alır, makineye **doğru bakan** bant onu besler. Bu sayede binaları döndürmeye gerek kalmıyor.
@@ -83,6 +84,7 @@ js/data.js        Eşyalar, tarifler, binalar, kilometre taşları, fazlar, baş
 js/icons.js       Prosedürel eşya ikonları
 js/world.js       Tohumlu gezegen üretimi (arazi, düğümler, salyangozlar, kaza alanları)
 js/sim.js         Simülasyon (20 tick/sn): bantlar, makineler, güç, ilerleme, kayıt
+js/combat.js      Rakip yapay zekâ, baskınlar, saldırılar, birimler, taretler
 js/render.js      Canvas çizimi: arazi parçaları, binalar, eşyalar, sis, parçacıklar
 js/ui.js          DOM arayüzü, paneller, hedef kartı, yerleştirme önizlemesi
 js/input.js       Fare / dokunmatik / klavye

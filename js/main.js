@@ -44,6 +44,8 @@ const Minimap = {
       }
     }
     G.slugs.forEach((s, i) => { if (!G.slugsTaken.has(i) && G.revealed[idx(s.x, s.y)]) d.set([90, 200, 255, 255], idx(s.x, s.y) * 4); });
+    if (G.rival && G.rival.discovered) for (const st of G.rival.structs) for (let j = 0; j < st.size; j++) for (let i = 0; i < st.size; i++) d.set([255, 60, 60, 255], idx(st.x + i, st.y + j) * 4);
+    for (const u of G.units) { const x = Math.floor(u.x), y = Math.floor(u.y); if (inBounds(x, y)) d.set(u.team === 'p' ? [80, 180, 255, 255] : [255, 40, 40, 255], idx(x, y) * 4); }
     G.crashes.forEach((c, i) => { if (!G.crashesOpened.has(i) && G.revealed[idx(c.x, c.y)]) d.set([255, 70, 70, 255], idx(c.x, c.y) * 4); });
     this.ctx.putImageData(img, 0, 0);
     // camera rect
@@ -164,6 +166,25 @@ const Main = {
         case 'float': R.addFloat(ev.x * TILE, ev.y * TILE, ev.text, ev.color, ev.item); break;
         case 'toast': UI.toast(ev.text); break;
         case 'coupon': Sound.sfx.coupon(); UI.toast('🎟 +1 ' + T('coupons'), 'good'); break;
+        case 'raid':
+          Sound.sfx.alarm();
+          UI.toast(`⚔ ${T('raidStarted', L(RIVAL.name))}${G.autoDefend ? ' · 🛡 ' + T('defendersOut') : ''}`, 'bad');
+          break;
+        case 'battleEnd': {
+          const b = ev.b;
+          if (ev.kind === 'raid') UI.toast(`${ev.repelled ? '🛡 ' + T('raidRepelled') : '⚔ ' + T('raidOver')} · ☠ ${b.kills} · 💰 +${fmt(b.loot)}${b.damaged ? ' · 🔧 ' + b.damaged : ''}${b.stolen ? ' · -' + fmt(b.stolen) + ' 💰' : ''}`, ev.repelled ? 'good' : 'bad');
+          else UI.toast(`⚔ ${T('attackOver')} · 🏚 ${b.destroyed || 0} · ☠ ${b.kills} · 💰 +${fmt(b.loot)}`, 'good');
+          if (ev.repelled || ev.kind === 'attack') SDK.happytime();
+          break;
+        }
+        case 'hqDown':
+          Sound.sfx.phase(); this.confetti(); SDK.happytime();
+          UI.modal(`<h2 class="victory">🏴 ${T('hqDownTitle')}</h2><p>${T('hqDownText', fmt(ev.loot))}</p><div class="modal-btns"><button class="btn primary" data-act="modal-close">${T('continue')}</button></div>`);
+          break;
+        case 'rivalFound':
+          Sound.sfx.alarm();
+          UI.toast(`☠ ${T('rivalFoundToast', L(RIVAL.name))}`, 'bad');
+          break;
         case 'order': Sound.sfx.coupon(); UI.toast(`📦 ${T('orderDone')} 💰 +${fmt(ev.reward)}${ev.coupon ? ' · 🎟 +1' : ''}`, 'good'); break;
         case 'ach': UI.toast('🏆 ' + T('achUnlocked', ev.name), 'ach'); Sound.sfx.collect(); break;
         case 'milestone': {

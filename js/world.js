@@ -157,6 +157,29 @@ const World = {
       if (terr[y * W + x] === TERR.ROCK || terr[y * W + x] === TERR.WATER) terr[y * W + x] = TERR.GRASS;
     }
 
-    return { W, H, terr, shade, trees, nodes, nodeAt, slugs, crashes, cx, cy };
+    // Rival faction base: own RNG so older worlds keep their slugs and crash sites
+    const rr = mulberry32(seed * 7907 + 3);
+    let rival = null;
+    for (let t = 0; t < 400 && !rival; t++) {
+      const a = rr() * Math.PI * 2, d = 50 + rr() * 12;
+      const x = Math.round(cx + Math.cos(a) * d), y = Math.round(cy + Math.sin(a) * d);
+      if (x < 14 || y < 14 || x > W - 14 || y > H - 14) continue;
+      let bad = 0;
+      for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) if (terr[(y + j) * W + x + i] === TERR.WATER) bad++;
+      if (bad > 20) continue;
+      if (crashes.some(c => Math.abs(c.x - x) < 9 && Math.abs(c.y - y) < 9)) continue;
+      rival = { x, y };
+    }
+    if (!rival) rival = { x: Math.min(W - 15, cx + 52), y: cy };
+    // clear the rival's land (keep resource nodes)
+    for (let j = -9; j <= 9; j++) for (let i = -9; i <= 9; i++) {
+      if (i * i + j * j > 81) continue;
+      const k = (rival.y + j) * W + rival.x + i;
+      if (nodeAt[k] >= 0) continue;
+      trees[k] = 0;
+      if (terr[k] === TERR.WATER || terr[k] === TERR.ROCK) terr[k] = TERR.SAND;
+    }
+
+    return { W, H, terr, shade, trees, nodes, nodeAt, slugs, crashes, cx, cy, rival };
   },
 };
